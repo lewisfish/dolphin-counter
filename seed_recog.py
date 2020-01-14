@@ -293,7 +293,7 @@ def gradient_watershed(image, threshold, debug=False):
     ----------
 
     image : np.ndarray or 2D array
-        Image of object for which to segment
+        Image of object for which to segment. Grayscale
 
     threshold : np.ndarray, 2D
         Binary thresholded image.
@@ -398,6 +398,7 @@ seedcount = 0
 
 segmap = np.zeros_like(gray)
 
+# isolate small seeds, and plot bounding box
 for s in small:
     minr, minc, maxr, maxc = s.bbox
     rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
@@ -405,6 +406,7 @@ for s in small:
     axs.add_patch(rect)
     axs.scatter(*s.centroid[::-1], color="green", marker="x")
     seedcount += 1
+    # add seed to segmentation map
     segmap[s.slice] = thresh[s.slice]
 
     seed = img[s.slice]
@@ -414,7 +416,7 @@ for s in small:
 origSegmap = segmap
 segmap = label(segmap)
 
-
+# isolate collections of seeds, and try to separate into individual seeds
 for region in large:
 
     y1 = region.bbox[0]

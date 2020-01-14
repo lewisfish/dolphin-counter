@@ -39,16 +39,14 @@ totalFrameNumber = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
 height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
-times = [20*60 + 49, 21*60 + 45, 23*60 + 25, 30*60 + 19, 29*60 + 47]
+times = [12*60 + 26, 12*60 + 17, 12*60 + 28, 12*60 + 38, 14*60 + 19]
 for i, time in enumerate(times):
     frameNum = time * fps
-    print(fps, totalFrameNumber, width, height, frameNum)
+    # print(fps, totalFrameNumber, width, height, frameNum)
     cap.set(cv2.CAP_PROP_POS_FRAMES, frameNum)
     _, frame = cap.read()
-    # dim = (1920, 1080)
-    # frame = cv2.resize(frame, dim)
-    # cv2.imshow("blah", frame)
-    cv2.imwrite(f"{i}.png", frame)
-    # cv2.waitKey()
+    name = video[0:13] + "_4"
+    print(name + f"_{i}.png")
+    cv2.imwrite(name + f"_{i}.png", frame)
+
 cap.release()
-# cv2.destroyAllWindows()
