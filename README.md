@@ -25,9 +25,6 @@ If you are using anaconda to manage your python enviroment then use the followin
   - photutils 0.7.2+
   - scikit-image 0.16.2+
 
-## Usage
-
-
 ## ToDo
  - [x] Generate candidates dolphin objects using thresholding, watershedding etc
  - [ ] Refine this
