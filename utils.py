@@ -85,6 +85,7 @@ def debug_fig(im1, im2, im3, im4, labels):
     '''
 
     fig, ax = plt.subplots(2, 2)
+    fig.canvas.manager.window.move(2*int(1920 / 3), 0)
     ax = ax.ravel()
 
     plt.subplots_adjust(top=0.926, bottom=0.031, left=0.023, right=0.977, hspace=0.179, wspace=0.05)

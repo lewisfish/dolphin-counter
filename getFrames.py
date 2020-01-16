@@ -55,7 +55,7 @@ for i, time in enumerate(times):
     cap.set(cv2.CAP_PROP_POS_FRAMES, frameNum)
     _, frame = cap.read()
     # save frame as png
-    name = args.file[0:13] + str(frameNum)
+    name = args.file[0:13] + f"_{frameNum}"
     print(name + ".png")
     cv2.imwrite(name + ".png", frame)
 
