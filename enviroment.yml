@@ -1,0 +1,11 @@
+name: image
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - opencv
+  - numpy
+  - scikit-image
+  - matplotlib
+prefix: /home/lewis/anaconda3/envs/image
+
