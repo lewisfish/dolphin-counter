@@ -7,5 +7,7 @@ dependencies:
   - numpy
   - scikit-image
   - matplotlib
+  - astropy
+  - photutils
 prefix: /home/lewis/anaconda3/envs/image
 
