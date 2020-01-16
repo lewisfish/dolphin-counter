@@ -16,15 +16,14 @@ If you are using anaconda to manage your python enviroment then use the followin
 
    - conda env create -f enviroment.yml
 
-Or if you use pip
-   - pip install --user --requirment requirments.txt
-
 ## Requirments
-
-  - opencv
-  - numpy
-  - scikit-image
-  - matplotlib
+ 
+  - astropy 4.0+
+  - opencv 4.2.0+
+  - matplotlib 3.1.2+
+  - numpy 1.17.3+
+  - photutils 0.7.2+
+  - scikit-image 0.16.2+
 
 ## Usage
 
