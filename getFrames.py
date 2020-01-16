@@ -42,7 +42,7 @@ parser.add_argument("-t", "--times", type=str,
 args = parser.parse_args()
 
 # open video file
-cap = cv2.VideoCapture(args.file)
+cap = cv2.VideoCapture(args.file)  # converts to RGB by default
 fps = cap.get(cv2.CAP_PROP_FPS)  # get fps
 
 times = getTimes(args.times)
