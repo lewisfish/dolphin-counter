@@ -1,11 +1,13 @@
 from argparse import ArgumentParser
 from copy import copy
 import sys
+import time
 
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 import matplotlib.patches as mpatches
+from scipy import ndimage as ndi
 
 from astropy.stats import SigmaClip
 from photutils import Background2D, MedianBackground
@@ -16,7 +18,84 @@ from skimage.measure import regionprops, label
 from skimage.morphology import square, opening, watershed, disk, remove_small_objects
 from skimage.util import img_as_ubyte, invert
 
-from utils import debug_fig, supressAxs
+from utils import debug_fig, make_random_cmap
+
+
+def estimate_background(image, sigma=2., boxsize=(5, 10), simple=True):
+    '''Function estimates the background of provided image.
+
+    Parameters
+    ----------
+
+    image : np.ndarray, 2D
+        Image from which the background will be estimated.
+
+    sigma : float, optional
+        Sigma for either Gaussian filter or Background2D method.
+
+    boxsize : Tuple(int), optional
+        Size of patches used in Background2D method
+
+    simple : bool, optional
+        If true then uses a simple Gaussian blur to estimate background.
+        If False uses photutils Background2D method
+
+    Returns
+    -------
+
+    bkg : np.ndarray, 2D
+        Estimated background.
+
+    '''
+
+    if simple:
+        # Use Gaussian blur to create background
+        bkg = ndi.gaussian_filter(data, sigma=sigma)
+    else:
+        # use some astronomy functions to estimate background
+        sigma_clip = SigmaClip(sigma=sigma)
+        bkg_estimator = MedianBackground()
+        bkg = Background2D(image, box_size=boxsize,
+                           sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
+        bkg = bkg.background
+
+    return bkg
+
+
+def get_threshold(image, local=False, block_size=11, offset=3):
+    '''Function calculates the best thresholding value to binarise the image
+
+    Parameters
+    ----------
+
+    image : np.ndarray, 2D
+        Image to be binarised
+
+    local : bool, optional
+        If True then uses local thresholding. If False use a global value.
+
+    block_size : int, optional
+        Size of the blocks to use in local thresholding
+
+    offset : int, optional
+        Constant subtracted from weighted mean of neighborhood to calculate
+        the local threshold value.
+
+    Returns
+    -------
+
+    thresholded : np.ndarray, 2D
+        The binarised image.
+    '''
+
+    if local:
+        local_thresh = threshold_local(image, block_size, offset=offset)
+        thresholded = image > local_thresh
+    else:
+        global_thresh = threshold_yen(image)
+        thresholded = image > global_thresh
+
+    return thresholded
 
 
 def gradient_watershed(image, threshold, debug=False, altMarker=False):
@@ -50,15 +129,16 @@ def gradient_watershed(image, threshold, debug=False, altMarker=False):
         markers = meijering(image, black_ridges=True)
     else:
         markers = sato(image, black_ridges=True)  # meijring maybe better?
-    # remove noise
+
     markers = img_as_ubyte(markers)
     tmp = markers.copy()
+    # threshold and mask
     markers = (markers < 3) * threshold
     tmpt = markers
     markers = label(markers)
-    # remove small lines
 
     # create array for which the watershed algorithm will fill
+    # based upon the gradient of the image
     edges = rank.gradient(image, disk(1))
 
     segm = watershed(edges, markers, mask=threshold)
@@ -67,7 +147,9 @@ def gradient_watershed(image, threshold, debug=False, altMarker=False):
 
     if debug >= 2:
         debug_fig(image, edges, labels, markers,
-                  ["Image", "Edges", "Labels", "markers"])
+                  ["Image", "Edges", "Labels", "markers"],
+                  [plt.cm.gray, None, make_random_cmap(), plt.cm.nipy_spectral],
+                  pos=2)
     return labels
 
 
@@ -84,6 +166,8 @@ args = parser.parse_args()
 if args.file is None:
     raise IOError("No file provided!!")
 
+start = time.time()
+
 try:
     img = io.imread(args.file)
 except FileNotFoundError:
@@ -94,46 +178,22 @@ img = img[130:1030, 0:1990]
 # as this appears to work better than converting to grayscale directly...
 data = rgb2ycbcr(img)[:, :, 0]
 
-ny, nx = data.shape
-y, x = np.mgrid[:ny, :nx]
+bkg = estimate_background(data, sigma=100.)
 
-# use some astronomy functions to estimate background
-sigma_clip = SigmaClip(sigma=1.8)
-bkg_estimator = MedianBackground()
-bkg = Background2D(data, box_size=(10, 10),
-                   sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
-
-# subtract background
-bkgsub = data - 1.5*bkg.background
+# subtract background and renormalise
+bkgsub = data - 1.5*bkg
 bkgsub = bkgsub / np.amax(np.abs(bkgsub))
 bkgsub = img_as_ubyte(bkgsub)
 
-# threshold image
-global_thresh = threshold_yen(bkgsub)
-binary_global = bkgsub > global_thresh
-
-block_size = 11
-local_thresh = threshold_local(bkgsub, block_size, offset=3)
-binary_local = bkgsub > local_thresh
-
+# get location of probable dolphin
+thresh = get_threshold(bkgsub, local=False, offset=5, block_size=51)
 # remove noise
-thresh = opening(invert(binary_local), disk(1))
-labels = label(thresh)
+thresh = invert(opening(thresh, disk(5)))
 
 if args.debug > 0:
-    figd, axs = plt.subplots(2, 2)
-    figd.canvas.manager.window.move(int(1920 / 3), 0)
-    axs = axs.ravel()
-    plt.subplots_adjust(top=0.926, bottom=0.031, left=0.023, right=0.977, hspace=0.179, wspace=0.05)
-    axs = [supressAxs(i) for i in axs]
-    axs[0].imshow(data, cmap=plt.cm.gray)
-    axs[0].set_title("Image")
-    axs[1].imshow(bkg.background, cmap=plt.cm.gray)
-    axs[1].set_title("Background est.")
-    axs[2].imshow(bkgsub, cmap=plt.cm.gray)
-    axs[2].set_title("Image - background")
-    axs[3].imshow(thresh, cmap=plt.cm.gray)
-    axs[3].set_title("Threshold")
+    labels = ["Image", "Background est.", "Image - background", "Threshold"]
+    cmaps = [plt.cm.gray for i in range(0, 4)]
+    figd, axs = debug_fig(data, bkg, bkgsub, thresh, labels, cmaps, pos=1)
 
 # preform watershedding
 labs = gradient_watershed(bkgsub, thresh, debug=args.debug)
@@ -143,7 +203,7 @@ fig.canvas.manager.window.move(0, 0)
 ax.imshow(img)
 
 dcount = 0
-for region in regionprops(labels):
+for region in regionprops(labs):
     a = region.major_axis_length
     b = region.minor_axis_length
     area = np.pi * a * b
@@ -162,7 +222,9 @@ for region in regionprops(labels):
             axs[0].add_patch(ellipsecopy)
         ax.add_patch(ellipse)
 
-text = f"Total dolphins:{dcount}"
+finish = time.time()
+text = f"Total dolphins:{dcount}\n"
+text += f"Total time:{finish-start:.03f}"
 textbox = AnchoredText(text, frameon=True, loc=3, pad=0.5)
 ax.add_artist(textbox)
 

@@ -66,7 +66,7 @@ def supressAxs(ax):
     return ax
 
 
-def debug_fig(im1, im2, im3, im4, labels):
+def debug_fig(im1, im2, im3, im4, labels, cmaps, pos=None):
     '''Function that plots 4 images in one figure
 
 
@@ -85,20 +85,37 @@ def debug_fig(im1, im2, im3, im4, labels):
     '''
 
     fig, ax = plt.subplots(2, 2)
-    fig.canvas.manager.window.move(2*int(1920 / 3), 0)
+    if pos is None:
+        fig.canvas.manager.window.move(0, 0)
+    else:
+        if pos == 0:
+            fig.canvas.manager.window.move(0, 0)
+        elif pos == 1:
+            fig.canvas.manager.window.move(int(1920 / 3), 0)
+        elif pos == 2:
+            fig.canvas.manager.window.move(2*int(1920 / 3), 0)
+        elif pos == 3:
+            fig.canvas.manager.window.move(0, int(1080/2))
+        elif pos == 4:
+            fig.canvas.manager.window.move(int(1920 / 3), int(1080/2))
+        elif pos == 5:
+            fig.canvas.manager.window.move(2*int(1920 / 3), int(1080/2))
+
     ax = ax.ravel()
 
     plt.subplots_adjust(top=0.926, bottom=0.031, left=0.023, right=0.977, hspace=0.179, wspace=0.05)
     ax = [supressAxs(i) for i in ax]
 
-    ax[0].imshow(im1, cmap=plt.cm.gray, aspect="auto")
+    ax[0].imshow(im1, cmap=cmaps[0], aspect="auto")
     ax[0].set_title(labels[0])
 
-    ax[1].imshow(im2, aspect="auto")
+    ax[1].imshow(im2, aspect="auto", cmap=cmaps[1])
     ax[1].set_title(labels[1])
 
-    ax[2].imshow(im3, aspect="auto", cmap=make_random_cmap())
+    ax[2].imshow(im3, aspect="auto", cmap=cmaps[2])
     ax[2].set_title(labels[2])
 
-    ax[3].imshow(im4, aspect="auto")
+    ax[3].imshow(im4, aspect="auto", cmap=cmaps[3])
     ax[3].set_title(labels[3])
+
+    return fig, ax
