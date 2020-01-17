@@ -2,9 +2,11 @@ import cv2
 from argparse import ArgumentParser
 
 
-def getTimes(file):
+def getTimes(file, fps):
     '''Function takes a filename and returns times in seconds from an expected
-       format of hr:min:sec
+       format of hr:min:sec #frames
+       Where #frames is the number of frames to return after this timestamp.
+       If #frames is not provided then we assume just 1 frame is needed.
 
     Parameters
     ----------
@@ -24,9 +26,14 @@ def getTimes(file):
     with open(file, "r")as f:
         lines = f.readlines()
         for line in lines:
-            hour, minute, sec = line.split(":")
+            numExtraFrames = line.split(" ")
+            hour, minute, sec = numExtraFrames[0].split(":")
             time = (int(hour) * 60*60) + (int(minute) * 60) + int(sec)
             times.append(time)
+            if len(numExtraFrames) > 1:
+                iters = int(numExtraFrames[1])
+                for i in range(1, iters):
+                    times.append(time+i/fps)
 
     return times
 
@@ -45,7 +52,7 @@ args = parser.parse_args()
 cap = cv2.VideoCapture(args.file)  # converts to RGB by default
 fps = cap.get(cv2.CAP_PROP_FPS)  # get fps
 
-times = getTimes(args.times)
+times = getTimes(args.times, fps)
 
 # loop over times to create frames
 for i, time in enumerate(times):

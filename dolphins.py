@@ -212,10 +212,11 @@ for region in regionprops(labs):
 
         dcount += 1
         theta = region.orientation
-        centre = region.centroid
-        ellipse = mpatches.Ellipse(centre[::-1], 2.*a, 2.*b,
-                                   angle=-(90+np.rad2deg(theta)),
+        centre = region.centroid[::-1]
+        ellipse = mpatches.Ellipse(centre, 2.*b, 2.*a,
+                                   angle=-np.rad2deg(theta),
                                    fill=False, color="red")
+
         if args.debug > 0:
             # need to use copy() as cant add same artist to different figs for whatever reason...
             ellipsecopy = copy(ellipse)
