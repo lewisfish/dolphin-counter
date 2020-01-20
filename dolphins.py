@@ -15,7 +15,7 @@ from skimage import io
 from skimage.color import rgb2ycbcr
 from skimage.filters import threshold_yen, sato, rank, meijering, threshold_local
 from skimage.measure import regionprops, label
-from skimage.morphology import square, opening, watershed, disk, remove_small_objects
+from skimage.morphology import square, opening, watershed, disk, remove_small_objects,dilation
 from skimage.util import img_as_ubyte, invert
 
 from utils import debug_fig, make_random_cmap
@@ -62,7 +62,7 @@ def estimate_background(image, sigma=2., boxsize=(5, 10), simple=True):
     return bkg
 
 
-def get_threshold(image, local=False, block_size=11, offset=3):
+def get_threshold(image, local=False, block_size=11, offset=0):
     '''Function calculates the best thresholding value to binarise the image
 
     Parameters
@@ -176,27 +176,38 @@ except FileNotFoundError:
 img = img[130:1030, 0:1990]
 # convert to ycbcr space and take yc values
 # as this appears to work better than converting to grayscale directly...
+tmp = np.where(img[:, :, 0] < (img[:, :, 2] + img[:, :, 1])/2)
+imgmask = img.copy()
+imgmask[tmp] = 0
 data = rgb2ycbcr(img)[:, :, 0]
 
-bkg = estimate_background(data, sigma=100.)
+bkg = estimate_background(data, sigma=200.)
+bkgMask = invert(get_threshold(bkg)).astype(int)
+imgmask = imgmask[:, :, 0] * bkgMask
+imgmask = np.where(imgmask > 0, 1, 0)
+imgmask = opening(imgmask, disk(2))
+imgmask = invert(dilation(imgmask, disk(5)))
 
 # subtract background and renormalise
 bkgsub = data - 1.5*bkg
+bkgsub *= bkgMask
 bkgsub = bkgsub / np.amax(np.abs(bkgsub))
 bkgsub = img_as_ubyte(bkgsub)
 
+
 # get location of probable dolphin
-thresh = get_threshold(bkgsub, local=False, offset=5, block_size=51)
+# thresh = get_threshold(imgmask, local=True, block_size=51)
 # remove noise
-thresh = invert(opening(thresh, disk(5)))
+# thresh = invert(opening(thresh, disk(6)))
+
 
 if args.debug > 0:
     labels = ["Image", "Background est.", "Image - background", "Threshold"]
     cmaps = [plt.cm.gray for i in range(0, 4)]
-    figd, axs = debug_fig(data, bkg, bkgsub, thresh, labels, cmaps, pos=1)
+    figd, axs = debug_fig(data, bkg, bkgsub, imgmask, labels, cmaps, pos=1)
 
 # preform watershedding
-labs = gradient_watershed(bkgsub, thresh, debug=args.debug)
+labs = gradient_watershed(bkgsub, imgmask, debug=args.debug)
 
 fig, ax = plt.subplots(1, 1)
 fig.canvas.manager.window.move(0, 0)

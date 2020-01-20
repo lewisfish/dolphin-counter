@@ -84,7 +84,7 @@ def debug_fig(im1, im2, im3, im4, labels, cmaps, pos=None):
 
     '''
 
-    fig, ax = plt.subplots(2, 2)
+    fig, ax = plt.subplots(2, 2, sharex=True, sharey=True)
     if pos is None:
         fig.canvas.manager.window.move(0, 0)
     else:
