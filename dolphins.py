@@ -15,7 +15,7 @@ from skimage import io
 from skimage.color import rgb2ycbcr
 from skimage.filters import threshold_yen, sato, rank, meijering, threshold_local
 from skimage.measure import regionprops, label
-from skimage.morphology import square, opening, watershed, disk, remove_small_objects,dilation
+from skimage.morphology import opening, watershed, disk, remove_small_objects, dilation
 from skimage.util import img_as_ubyte, invert
 
 from utils import debug_fig, make_random_cmap
@@ -50,7 +50,8 @@ def estimate_background(image, sigma=2., boxsize=(5, 10), simple=True):
 
     if simple:
         # Use Gaussian blur to create background
-        bkg = ndi.gaussian_filter(data, sigma=sigma)
+        bkg = ndi.uniform_filter(data, (90, 199))
+        # bkg = ndi.gaussian_filter(data, sigma=sigma)
     else:
         # use some astronomy functions to estimate background
         sigma_clip = SigmaClip(sigma=sigma)
@@ -136,12 +137,13 @@ def gradient_watershed(image, threshold, debug=False, altMarker=False):
     markers = (markers < 3) * threshold
     tmpt = markers
     markers = label(markers)
+    markers[markers == 1] = 0
 
     # create array for which the watershed algorithm will fill
     # based upon the gradient of the image
     edges = rank.gradient(image, disk(1))
 
-    segm = watershed(edges, markers, mask=threshold)
+    segm = watershed(edges, markers)#, mask=threshold)
     labels = label(segm, connectivity=2)
     labels = remove_small_objects(labels, min_size=20)
 
@@ -176,19 +178,26 @@ except FileNotFoundError:
 img = img[130:1030, 0:1990]
 # convert to ycbcr space and take yc values
 # as this appears to work better than converting to grayscale directly...
+data = rgb2ycbcr(img)[:, :, 0]
+
+# create mask based upon red values
+# Theory is that dolphins should have more red than the sea...
 tmp = np.where(img[:, :, 0] < (img[:, :, 2] + img[:, :, 1])/2)
 imgmask = img.copy()
 imgmask[tmp] = 0
-data = rgb2ycbcr(img)[:, :, 0]
 
+# estimate background then threshold it to get a mask
 bkg = estimate_background(data, sigma=200.)
 bkgMask = invert(get_threshold(bkg)).astype(int)
+# combine masks
 imgmask = imgmask[:, :, 0] * bkgMask
+# convert to binary
 imgmask = np.where(imgmask > 0, 1, 0)
+# remove noise and then enlarge areas
 imgmask = opening(imgmask, disk(2))
-imgmask = invert(dilation(imgmask, disk(5)))
+imgmask = dilation(imgmask, disk(5))
 
-# subtract background and renormalise
+# subtract background, apply mask and renormalise
 bkgsub = data - 1.5*bkg
 bkgsub *= bkgMask
 bkgsub = bkgsub / np.amax(np.abs(bkgsub))
