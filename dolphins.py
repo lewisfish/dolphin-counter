@@ -16,9 +16,54 @@ from skimage.color import rgb2ycbcr
 from skimage.filters import threshold_yen, sato, rank, meijering, threshold_local
 from skimage.measure import regionprops, label
 from skimage.morphology import opening, watershed, disk, remove_small_objects, dilation
-from skimage.util import img_as_ubyte, invert
+from skimage.util import img_as_ubyte, invert, img_as_float
 
 from utils import debug_fig, make_random_cmap
+
+
+def createMask(image, factor=1.3):
+    '''Function creates a mask based upon the red channel
+       Idea from "Detection of Dugongs from Unmanned Aerial Vehicles" F.Marie et al.
+
+
+    Parameters
+    ----------
+
+    image : np.ndarray, 2D
+        Image to be masked.
+
+    factor : float, optional
+        Factor which is used as a threshold to determine the creation of the mask.
+        Default value is 1.3
+
+    Returns
+    -------
+
+    mask : np.ndarray, 2D
+        Image mask. Returns the 3 channel image which has been masked.
+
+    '''
+
+    rmean = np.mean(image[:, :, 0])
+    gmean = np.mean(image[:, :, 1])
+    bmean = np.mean(image[:, :, 2])
+
+    # select pixels that are greater than f*mean, where f is some factor.
+    rtrue = np.where(image[:, :, 0] > factor*rmean, 1, 0)
+    gtrue = np.where(image[:, :, 1] > factor*gmean, 1, 0)
+    btrue = np.where(image[:, :, 2] > factor*bmean, 1, 0)
+
+    # create mask
+    mask = np.logical_and(rtrue, gtrue)
+    mask = np.logical_and(mask, btrue)
+    mask = mask.astype(bool)
+
+    # apply mask
+    tmp = np.where(mask == 0)
+    mask = image.copy()
+    mask[tmp] = 0
+
+    return mask
 
 
 def estimate_background(image, sigma=2., boxsize=(5, 10), simple=True):
@@ -143,7 +188,7 @@ def gradient_watershed(image, threshold, debug=False, altMarker=False):
     # based upon the gradient of the image
     edges = rank.gradient(image, disk(1))
 
-    segm = watershed(edges, markers)#, mask=threshold)
+    segm = watershed(edges, markers)
     labels = label(segm, connectivity=2)
     labels = remove_small_objects(labels, min_size=20)
 
@@ -162,6 +207,9 @@ parser.add_argument("-f", "--file", type=str,
 
 parser.add_argument("-d", "--debug", action="count", default=0,
                     help="Display debug info.")
+
+parser.add_argument("-np", "--noplot", action="store_true",
+                    help="Suppress default plot output.")
 
 args = parser.parse_args()
 
@@ -182,20 +230,18 @@ data = rgb2ycbcr(img)[:, :, 0]
 
 # create mask based upon red values
 # Theory is that dolphins should have more red than the sea...
-tmp = np.where(img[:, :, 0] < (img[:, :, 2] + img[:, :, 1])/2)
-imgmask = img.copy()
-imgmask[tmp] = 0
+imgmask = createMask(img)
 
 # estimate background then threshold it to get a mask
-bkg = estimate_background(data, sigma=200.)
+bkg = estimate_background(data, sigma=100.)
 bkgMask = invert(get_threshold(bkg)).astype(int)
 # combine masks
 imgmask = imgmask[:, :, 0] * bkgMask
 # convert to binary
 imgmask = np.where(imgmask > 0, 1, 0)
 # remove noise and then enlarge areas
-imgmask = opening(imgmask, disk(2))
-imgmask = dilation(imgmask, disk(5))
+# imgmask = opening(imgmask, disk(2))
+# imgmask = dilation(imgmask, disk(5))
 
 # subtract background, apply mask and renormalise
 bkgsub = data - 1.5*bkg
@@ -248,5 +294,6 @@ text = f"Total dolphins:{dcount}\n"
 text += f"Total time:{finish-start:.03f}"
 textbox = AnchoredText(text, frameon=True, loc=3, pad=0.5)
 ax.add_artist(textbox)
-
-plt.show()
+print(dcount)
+if not args.noplot:
+    plt.show()
