@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from skimage import io
 from skimage.morphology import remove_small_objects, label
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
 import tensorflow as tf
 
 __all__ = ["getMagnification"]

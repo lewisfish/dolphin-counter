@@ -1,4 +1,3 @@
-from argparse import ArgumentParser
 from copy import copy
 import sys
 import time
@@ -16,7 +15,8 @@ from skimage.measure import regionprops, label
 from skimage.morphology import opening, watershed, disk, remove_small_objects, dilation
 from skimage.util import img_as_ubyte, invert, img_as_float
 
-from utils import debug_fig, make_random_cmap
+from utils import debug_fig, make_random_cmap, supressAxs
+from ocr import getMagnification
 
 
 def createMask(image, factor=1.3):
@@ -64,7 +64,7 @@ def createMask(image, factor=1.3):
     return mask
 
 
-def estimate_background(image, sigma=100., boxsize=(90, 199), simple=True):
+def estimate_background(image, sigma=100., boxsize=(90, 199), simple=False):
     '''Function estimates the background of provided image.
 
     Parameters
@@ -93,9 +93,9 @@ def estimate_background(image, sigma=100., boxsize=(90, 199), simple=True):
 
     # Use Gaussian blur to create background
     if simple:
-        bkg = ndi.uniform_filter(data, boxsize)
+        bkg = ndi.uniform_filter(image, boxsize)
     else:
-        bkg = ndi.gaussian_filter(data, sigma=sigma)
+        bkg = ndi.gaussian_filter(image, sigma=sigma)
 
     return bkg
 
@@ -192,100 +192,129 @@ def gradient_watershed(image, threshold, debug=False, altMarker=False):
     return labels
 
 
-parser = ArgumentParser(description="Counts objects in a picture")
+def main(filename, debug, noplot, c):
 
-parser.add_argument("-f", "--file", type=str,
-                    help="Path to single image to be analysed.")
+    if filename is None:
+        raise IOError("No file provided!!")
 
-parser.add_argument("-d", "--debug", action="count", default=0,
-                    help="Display debug info.")
+    start = time.time()
 
-parser.add_argument("-np", "--noplot", action="store_true",
-                    help="Suppress default plot output.")
+    try:
+        img = io.imread(filename)
+    except FileNotFoundError:
+        sys.exit()
 
-args = parser.parse_args()
+    magn = getMagnification(filename)
+    img = img[130:1030, 0:1990]
+    # convert to ycbcr space and take yc values
+    # as this appears to work better than converting to grayscale directly...
+    data = rgb2ycbcr(img)[:, :, 0]
 
-if args.file is None:
-    raise IOError("No file provided!!")
+    # create mask based upon red values
+    # Theory is that dolphins should have more red than the sea...
+    imgmask = createMask(img)
 
-start = time.time()
+    # estimate background then threshold it to get a mask
+    if magn <= 4.:
+        bkg = estimate_background(data, sigma=100.)
+        bkgMask = invert(get_threshold(bkg)).astype(int)
+    else:
+        bkgMask = np.ones_like(data)
+        bkg = np.zeros_like(data)
 
-try:
-    img = io.imread(args.file)
-except FileNotFoundError:
+    # combine masks
+    imgmask = imgmask[:, :, 0] * bkgMask
+
+    # convert to binary
+    imgmask = np.where(imgmask > 0, 1, 0)
+    # remove noise and then enlarge areas
+    imgmask = opening(imgmask, disk(2))
+    # imgmask = dilation(imgmask, disk(5))
+
+    # subtract background, apply mask and renormalise
+    bkgsub = data.copy() - 1.5*bkg
+    # bkgsub *= bkgMask
+    bkgsub = bkgsub / np.amax(np.abs(bkgsub))
+    bkgsub = img_as_ubyte(bkgsub)
+
+    # get location of probable dolphin
+    thresh = get_threshold(data, local=False, block_size=51)
+    # remove noise
+    # thresh = invert(opening(thresh, disk(2)))
+    if debug > 0:
+        labels = ["Image", "Background est.", "Image - background", "Threshold"]
+        cmaps = [plt.cm.gray for i in range(0, 4)]
+        figd, axs = debug_fig(data, bkg, bkgsub, thresh, labels, cmaps, pos=1)
+        plt.show()
     sys.exit()
+    # preform watershedding
+    labs = gradient_watershed(bkgsub, thresh, debug=debug)
 
-img = img[130:1030, 0:1990]
-# convert to ycbcr space and take yc values
-# as this appears to work better than converting to grayscale directly...
-data = rgb2ycbcr(img)[:, :, 0]
+    fig, ax = plt.subplots(1, 1)
+    fig.canvas.manager.window.move(0, 0)
+    ax = supressAxs(ax)
+    ax.imshow(img, aspect="auto")
 
-# create mask based upon red values
-# Theory is that dolphins should have more red than the sea...
-imgmask = createMask(img)
-
-# estimate background then threshold it to get a mask
-bkg = estimate_background(data, sigma=100.)
-bkgMask = invert(get_threshold(bkg)).astype(int)
-# combine masks
-imgmask = imgmask[:, :, 0] * bkgMask
-# convert to binary
-imgmask = np.where(imgmask > 0, 1, 0)
-# remove noise and then enlarge areas
-# imgmask = opening(imgmask, disk(2))
-# imgmask = dilation(imgmask, disk(5))
-
-# subtract background, apply mask and renormalise
-bkgsub = data - 1.5*bkg
-bkgsub *= bkgMask
-bkgsub = bkgsub / np.amax(np.abs(bkgsub))
-bkgsub = img_as_ubyte(bkgsub)
+    dcount = 0
 
 
-# get location of probable dolphin
-# thresh = get_threshold(imgmask, local=True, block_size=51)
-# remove noise
-# thresh = invert(opening(thresh, disk(6)))
+    for region in regionprops(labs):
+        a = region.major_axis_length
+        b = region.minor_axis_length
+        area = np.pi * a * b
+        # remove false positives
+        if a > 0 and b > 0 and region.eccentricity > 0.7 and area > magn*400 and region.eccentricity < 0.99:
+
+            dcount += 1
+            theta = region.orientation
+            centre = region.centroid[::-1]
+            ellipse = mpatches.Ellipse(centre, b, a,
+                                       angle=-np.rad2deg(theta),
+                                       fill=False, color="red")
+
+            if debug > 0:
+                # need to use copy() as cant add same artist to different figs for whatever reason...
+                ellipsecopy = copy(ellipse)
+                axs[0].add_patch(ellipsecopy)
+            ax.add_patch(ellipse)
+
+    finish = time.time()
+    text = f"Total dolphins:{dcount}\n"
+    text += f"Total time:{finish-start:.03f}\n"
+    text += f"Magnification:{magn}"
+    textbox = AnchoredText(text, frameon=True, loc=3, pad=0.5)
+    ax.add_artist(textbox)
+    print(dcount)
+    if not noplot:
+        plt.show()
+    else:
+        fig.set_figheight(11.25)
+        fig.set_figwidth(20)
+        plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
+                            hspace=0, wspace=0)
+        plt.savefig(f"output/{c:03}.png", dpi=96)
 
 
-if args.debug > 0:
-    labels = ["Image", "Background est.", "Image - background", "Threshold"]
-    cmaps = [plt.cm.gray for i in range(0, 4)]
-    figd, axs = debug_fig(data, bkg, bkgsub, imgmask, labels, cmaps, pos=1)
+if __name__ == '__main__':
+    from argparse import ArgumentParser
 
-# preform watershedding
-labs = gradient_watershed(bkgsub, imgmask, debug=args.debug)
+    parser = ArgumentParser(description="Counts objects in a picture")
 
-fig, ax = plt.subplots(1, 1)
-fig.canvas.manager.window.move(0, 0)
-ax.imshow(img)
+    parser.add_argument("-f", "--file", type=str,
+                        help="Path to single image to be analysed.")
 
-dcount = 0
-for region in regionprops(labs):
-    a = region.major_axis_length
-    b = region.minor_axis_length
-    area = np.pi * a * b
-    # remove false positives
-    if a > 0 and b > 0 and region.eccentricity > 0.7 and area < 400:
+    parser.add_argument("-d", "--debug", action="count", default=0,
+                        help="Display debug info.")
 
-        dcount += 1
-        theta = region.orientation
-        centre = region.centroid[::-1]
-        ellipse = mpatches.Ellipse(centre, 2.*b, 2.*a,
-                                   angle=-np.rad2deg(theta),
-                                   fill=False, color="red")
+    parser.add_argument("-np", "--noplot", action="store_true",
+                        help="Suppress default plot output.")
 
-        if args.debug > 0:
-            # need to use copy() as cant add same artist to different figs for whatever reason...
-            ellipsecopy = copy(ellipse)
-            axs[0].add_patch(ellipsecopy)
-        ax.add_patch(ellipse)
+    args = parser.parse_args()
 
-finish = time.time()
-text = f"Total dolphins:{dcount}\n"
-text += f"Total time:{finish-start:.03f}"
-textbox = AnchoredText(text, frameon=True, loc=3, pad=0.5)
-ax.add_artist(textbox)
-print(dcount)
-if not args.noplot:
-    plt.show()
+    files = ["2019_11_23_16_55399.png"]
+
+    start = time.time()
+    for i, file in enumerate(files):
+        main(file, args.debug, args.noplot, i)
+    finish = time.time()
+    print((finish-start) / len(files))
