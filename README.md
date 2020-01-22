@@ -4,11 +4,12 @@ This project aims to use machine learning techniques to count the amount of dolp
 
 ## Usage
 
-python dolphins.py [-h] [-f FILE] [-d{d}]
+python dolphins.py [-h] [-f FILE] [-d{d}] [-np]
 
 - -h, shows the help screen.
 - -f, Path to single image to be analysed.
-- -d, Display debug info. Has differnet levels of debug information, e.g -dd shows more debug info than -d
+- -d, Display debug info. Has differnet levels of debug information, e.g -dd shows more debug info than -d.
+- -np, Supress default plot output.
 
 ## Installation
 
@@ -18,12 +19,15 @@ If you are using anaconda to manage your python enviroment then use the followin
 
 ## Requirments
  
-  - astropy 4.0+
-  - opencv 4.2.0+
-  - matplotlib 3.1.2+
-  - numpy 1.17.3+
-  - photutils 0.7.2+
-  - scikit-image 0.16.2+
+  - opencv
+  - numpy
+  - scikit-image=0.16.2
+  - matplotlib
+  - pytesseract
+  - python=3.7
+  - tensorflow
+  - pandas
+
 
 ## ToDo
  - [x] Generate candidates dolphin objects using thresholding, watershedding etc
