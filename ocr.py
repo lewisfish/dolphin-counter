@@ -1,8 +1,8 @@
 import cv2
-from PIL import Image
-import tensorflow as tf
 import numpy as np
+from skimage import io
 from skimage.morphology import remove_small_objects, label
+import tensorflow as tf
 
 __all__ = ["getMagnification"]
 
@@ -112,9 +112,10 @@ def getMagnification(filename, debug=False):
     # Init ML model
     model = _initModel()
 
-    # Open image as grayscale with alpha
-    img = Image.open(filename).convert("LA")
-    array = np.array(img)[:, :, 0]
+    # Open image and convert to grayscale
+    img = io.imread(filename)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    array = np.array(img, "uint8")
 
     # Threshold, dilate and then crop to ROI.
     ret2, array = cv2.threshold(array, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)

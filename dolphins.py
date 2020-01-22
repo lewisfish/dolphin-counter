@@ -9,8 +9,6 @@ from matplotlib.offsetbox import AnchoredText
 import matplotlib.patches as mpatches
 from scipy import ndimage as ndi
 
-from astropy.stats import SigmaClip
-from photutils import Background2D, MedianBackground
 from skimage import io
 from skimage.color import rgb2ycbcr
 from skimage.filters import threshold_yen, sato, rank, meijering, threshold_local
@@ -66,7 +64,7 @@ def createMask(image, factor=1.3):
     return mask
 
 
-def estimate_background(image, sigma=2., boxsize=(5, 10), simple=True):
+def estimate_background(image, sigma=100., boxsize=(90, 199), simple=True):
     '''Function estimates the background of provided image.
 
     Parameters
@@ -76,14 +74,14 @@ def estimate_background(image, sigma=2., boxsize=(5, 10), simple=True):
         Image from which the background will be estimated.
 
     sigma : float, optional
-        Sigma for either Gaussian filter or Background2D method.
+        Sigma for either Gaussian filter.
 
     boxsize : Tuple(int), optional
-        Size of patches used in Background2D method
+        Size of box used in mean filter
 
     simple : bool, optional
-        If true then uses a simple Gaussian blur to estimate background.
-        If False uses photutils Background2D method
+        If False then uses a simple Gaussian blur to estimate background.
+        If True uses mean filter
 
     Returns
     -------
@@ -93,17 +91,11 @@ def estimate_background(image, sigma=2., boxsize=(5, 10), simple=True):
 
     '''
 
+    # Use Gaussian blur to create background
     if simple:
-        # Use Gaussian blur to create background
-        bkg = ndi.uniform_filter(data, (90, 199))
-        # bkg = ndi.gaussian_filter(data, sigma=sigma)
+        bkg = ndi.uniform_filter(data, boxsize)
     else:
-        # use some astronomy functions to estimate background
-        sigma_clip = SigmaClip(sigma=sigma)
-        bkg_estimator = MedianBackground()
-        bkg = Background2D(image, box_size=boxsize,
-                           sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
-        bkg = bkg.background
+        bkg = ndi.gaussian_filter(data, sigma=sigma)
 
     return bkg
 

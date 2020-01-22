@@ -5,9 +5,11 @@ channels:
 dependencies:
   - opencv
   - numpy
-  - scikit-image
+  - scikit-image=0.16.2
   - matplotlib
-  - astropy
-  - photutils
+  - pytesseract
+  - python=3.7
+  - tensorflow
+  - pandas
 prefix: /home/lewis/anaconda3/envs/image
 
