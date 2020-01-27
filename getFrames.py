@@ -30,12 +30,13 @@ def getTimes(file, fps):
             hour, minute, sec = numExtraFrames[0].split(":")
             time = (int(hour) * 60*60) + (int(minute) * 60) + int(sec)
             times.append(time)
-            if len(numExtraFrames) > 1:
-                iters = int(numExtraFrames[1])
-                for i in range(1, iters):
-                    times.append(time+i/fps)
 
-    return times
+    if len(numExtraFrames) == 1:
+        return times, 1, 1
+    elif len(numExtraFrames) == 2:
+        return times, int(numExtraFrames[1]), 1
+    else:
+        return times, int(numExtraFrames[1]), int(numExtraFrames[2])
 
 
 parser = ArgumentParser(description="Counts objects in a picture")
@@ -52,18 +53,20 @@ args = parser.parse_args()
 cap = cv2.VideoCapture(args.file)  # converts to RGB by default
 fps = cap.get(cv2.CAP_PROP_FPS)  # get fps
 
-times = getTimes(args.times, fps)
+times, rangeFrames, step = getTimes(args.times, fps)
 
 # loop over times to create frames
 for i, time in enumerate(times):
     # get frame number from fps and timestamp in seconds
     frameNum = int(time * fps)
     # set position in video as frameNum
-    cap.set(cv2.CAP_PROP_POS_FRAMES, frameNum)
-    _, frame = cap.read()
-    # save frame as png
-    name = args.file[0:13] + f"_{frameNum}"
-    print(name + ".png")
-    cv2.imwrite(name + ".png", frame)
+    for i in range(1, rangeFrames):
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frameNum)
+        _, frame = cap.read()
+        # save frame as png
+        name = args.file[0:13] + f"_{frameNum}"
+        print(name + ".png")
+        cv2.imwrite("Ml-test/" + name + ".png", frame)
+        frameNum += step
 
 cap.release()
