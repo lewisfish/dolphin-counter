@@ -18,19 +18,17 @@ def createDict(filename):
         if line[0] == "#":
             videoFile = line[1:].strip()
             mydict[videoFile] = {}
-            cap = cv2.VideoCapture(videoFile)  # converts to RGB by default
+            cap = cv2.VideoCapture(videoFile)  # converts to BGR by default
             fps = cap.get(cv2.CAP_PROP_FPS)  # get fps
             cap.release()
         else:
             lineSplit = line.split(",")
-            hour, minute, sec = lineSplit[0].split(":")
-            time = (int(hour) * 60*60) + (int(minute) * 60) + int(sec)
-            frameNum = int(time * fps)
+            frameNum = int(lineSplit[0])
 
-            x0 = int(lineSplit[1])
+            x0 = int(lineSplit[1][2:])
             y0 = int(lineSplit[2])
             x1 = int(lineSplit[3])
-            y1 = int(lineSplit[4])
+            y1 = int(lineSplit[4][:-2])
             coords = [[x0, y0], [x1, y1]]
 
             if "time" not in mydict[videoFile]:

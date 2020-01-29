@@ -5,10 +5,10 @@ from PyQt5.QtWidgets import QApplication
 from views import StartWindow
 from readFile import createDict
 
-parser = ArgumentParser(description="Counts objects in a picture")
+parser = ArgumentParser(description="Helps label video data for ML.")
 
 parser.add_argument("-f", "--file", type=str,
-                    help="Path to single image to be analysed.")
+                    help="Path to file that contains frame and bbox data.")
 
 
 args = parser.parse_args()

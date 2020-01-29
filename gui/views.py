@@ -13,6 +13,7 @@ class StartWindow(QMainWindow):
 
         self.genny = generatorFile
         self.filename, self.currentFrameNumber, self.bbox = next(self.genny)
+        self.outFile = open("labels.dat", "w")
 
         self.camera = Camera()
         self.camera.initialize(self.filename)
@@ -37,11 +38,13 @@ class StartWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
 
     def update_image_dolph(self):
+        self.outFile.write(f"{self.currentFrameNumber}, {self.bbox}, dolphin" + "\n")
         self.get_next_image_data()
         self.update_image()
 
     def update_image_other(self):
         self.get_next_image_data()
+        self.outFile.write(f"{self.currentFrameNumber}, {self.bbox}, other" + "\n")
         self.update_image()
 
     def get_next_image_data(self):
@@ -60,10 +63,15 @@ class StartWindow(QMainWindow):
         height, width, channel = frame.shape
         bytesPerLine = 3 * width
         if self.filename != "":
-            x1 = self.bbox[0][0]
-            x2 = self.bbox[1][0]
-            y1 = self.bbox[0][1]
-            y2 = self.bbox[1][1]
+            x1 = self.bbox[0][1]
+            x2 = self.bbox[1][1]
+            y1 = self.bbox[0][0]+130  # due to cropping in anaylsis
+            y2 = self.bbox[1][0]+130
+            ROI = frame[y1:y2, x1:x2]
+            ROI = cv2.resize(ROI, dsize=(0, 0), fx=20, fy=20)
+            heightROI, widthROI, _ = ROI.shape
+            frame[0:heightROI, 0:widthROI] = ROI
+            cv2.rectangle(frame, (0, 0), (widthROI, heightROI), (0, 0, 0), 2)
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
         else:
             frame = cv2.putText(frame, 'Done!!', (750, 380), cv2.FONT_HERSHEY_SIMPLEX,
@@ -73,6 +81,9 @@ class StartWindow(QMainWindow):
         pixmap = pixmap.scaled(1500, 1500, Qt.KeepAspectRatio)
         self.resize(pixmap.width(), pixmap.height())
         self.image_view.setPixmap(pixmap)
+
+    def close_event(self, event):
+        self.outFile.close()
 
 
 if __name__ == '__main__':
