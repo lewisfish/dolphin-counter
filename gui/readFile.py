@@ -1,12 +1,12 @@
 import cv2
 
 
-def iter_dict(videodict):
+def _iter_dict(videodict):
     for key in videodict:
         frames = videodict[key]["time"]
         bboxs = videodict[key]["bbox"]
         for i, j in zip(frames, bboxs):
-            yield i, j
+            yield key, i, j
 
 
 def createDict(filename):
@@ -18,7 +18,7 @@ def createDict(filename):
         if line[0] == "#":
             videoFile = line[1:].strip()
             mydict[videoFile] = {}
-            cap = cv2.VideoCapture("../" + videoFile)  # converts to RGB by default
+            cap = cv2.VideoCapture(videoFile)  # converts to RGB by default
             fps = cap.get(cv2.CAP_PROP_FPS)  # get fps
             cap.release()
         else:
@@ -40,7 +40,7 @@ def createDict(filename):
             mydict[videoFile]["time"].append(frameNum)
             mydict[videoFile]["bbox"].append(coords)
 
-    return mydict
+    return _iter_dict(mydict)
 
 
 if __name__ == '__main__':
