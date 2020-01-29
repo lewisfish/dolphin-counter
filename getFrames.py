@@ -36,7 +36,10 @@ def getTimes(file, fps):
     elif len(numExtraFrames) == 2:
         return times, int(numExtraFrames[1]), 1
     else:
-        return times, int(numExtraFrames[1]), int(numExtraFrames[2])
+        step = int(numExtraFrames[2])
+        if step == -99:
+            step = fps
+        return times, int(numExtraFrames[1]), step
 
 
 parser = ArgumentParser(description="Counts objects in a picture")
@@ -46,6 +49,8 @@ parser.add_argument("-f", "--file", type=str,
 parser.add_argument("-t", "--times", type=str,
                     help="Path to file which contains timestamps in the format\
                     hr:min:sec fro creating stills.")
+parser.add_argument("-fo", "--folder", type=str,
+                    help="Folder to save frames in.")
 
 args = parser.parse_args()
 
@@ -66,7 +71,7 @@ for i, time in enumerate(times):
         # save frame as png
         name = args.file[0:13] + f"_{frameNum}"
         print(name + ".png")
-        cv2.imwrite("Ml-test/" + name + ".png", frame)
-        frameNum += step
+        cv2.imwrite(f"{args.folder}/" + name + ".png", frame)
+        frameNum += int(step)
 
 cap.release()

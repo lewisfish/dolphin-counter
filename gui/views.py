@@ -79,10 +79,13 @@ class StartWindow(QMainWindow):
             y2 = self.bbox[1][0] + 130
 
             # get ROI and resize it and show as an inset
-            ROI = frame[y1:y2, x1:x2]
-            ROI = cv2.resize(ROI, dsize=(0, 0), fx=20, fy=20)
+            hdiff = int((y2-y1) / 2)
+            wdiff = int((x2-x1) / 2)
+            ROI = frame[y1-hdiff:y2+hdiff, x1-wdiff:x2+wdiff]
+            ROI = cv2.resize(ROI, interpolation=cv2.INTER_NEAREST, dsize=(0, 0), fx=20, fy=20)
             heightROI, widthROI, _ = ROI.shape
             frame[0:heightROI, 0:widthROI] = ROI
+            # check if green rect is in inset
             cv2.rectangle(frame, (0, 0), (widthROI, heightROI), (0, 0, 0), 2)
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
         else:

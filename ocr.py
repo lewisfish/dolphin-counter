@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from skimage import io
-from skimage.morphology import remove_small_objects, label
+from skimage.morphology import remove_small_objects, label, area_closing
 import warnings
 warnings.filterwarnings('ignore', category=FutureWarning)
 import tensorflow as tf
@@ -88,7 +88,7 @@ def _processLabels(image, stats, label):
     return digit
 
 
-def getMagnification(filename, debug=False):
+def getMagnification(filename, model, debug=False):
     '''Function uses ML OCR to determine the magnification of the frame from
        the drone video.
 
@@ -111,19 +111,25 @@ def getMagnification(filename, debug=False):
 
     '''
 
-    # Init ML model
-    model = _initModel()
-
     # Open image and convert to grayscale
     img = io.imread(filename)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    array = np.array(img, "uint8")
+    array = img
+    array = array[80:140, 25:127]
 
     # Threshold, dilate and then crop to ROI.
-    ret2, array = cv2.threshold(array, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-    kernel = np.ones((2, 2), np.uint8)
-    array = cv2.dilate(array, kernel, iterations=1)
-    array = array[80:140, 25:127]
+    ret2, thresh = cv2.threshold(array, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    kernel = np.ones((3, 3), np.uint8)
+    if np.mean(thresh) > 100.:
+        ret, thresh = cv2.threshold(array, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+        contour, hier = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+
+        for cnt in contour:
+            cv2.drawContours(thresh, [cnt], 0, 255, 1)
+        array = area_closing(thresh, area_threshold=156, connectivity=1)
+    else:
+        array = cv2.dilate(thresh, kernel, iterations=1)
 
     # Label and remove noise and decimal point
     array = label(array)
@@ -156,7 +162,10 @@ def getMagnification(filename, debug=False):
     first = labels[0]
     second = labels[1]
     if labels[2] != 3:
-        third = labels[2]
+        if labels[2] != 8 and labels[1] != 0:
+            third = labels[2]
+        else:
+            third = None
     else:
         third = None
 
@@ -190,6 +199,8 @@ if __name__ == '__main__':
 
     fig = plt.figure()
     outer_grid = fig.add_gridspec(5, 5, wspace=.5, hspace=0.)
+    # Init ML model
+    model = _initModel()
     for i, file in enumerate(files):
 
         magnification, digits, labels = getMagnification(file, debug=True)
