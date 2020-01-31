@@ -12,11 +12,11 @@ from skimage import io
 from skimage.color import rgb2ycbcr
 from skimage.filters import threshold_yen, rank, meijering, threshold_local
 from skimage.measure import regionprops, label
-from skimage.morphology import opening, watershed, disk, remove_small_objects, dilation
-from skimage.util import img_as_ubyte, invert, img_as_float
+from skimage.morphology import watershed, disk, remove_small_objects
+from skimage.util import img_as_ubyte, invert
 
-from utils import debug_fig, make_random_cmap, supressAxs
 from ocr import getMagnification
+from utils import debug_fig, make_random_cmap, supressAxs
 
 
 class Engine(object):
