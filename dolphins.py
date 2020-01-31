@@ -20,8 +20,8 @@ from utils import debug_fig, make_random_cmap, supressAxs
 
 
 class Engine(object):
-    '''Class existences so that Pool method can be used on _analyseImage.
-       Basically a way to pass the function arguments that are he same with
+    '''Class existences so that Pool method can be used on main.
+       Basically a way to pass the function arguments that are the same with
        one variable argument, i.e the file name'''
 
     def __init__(self, parameters):
@@ -34,7 +34,7 @@ class Engine(object):
         return main(filename, *self.parameters)
 
 
-def createMask(image, factor=1.3):
+def createMask(image: np.ndarray, factor=1.3) -> np.ndarray:
     '''Function creates a mask based upon the red channel
        Idea from "Detection of Dugongs from Unmanned Aerial Vehicles" F.Marie et al.
 
@@ -79,7 +79,8 @@ def createMask(image, factor=1.3):
     return mask
 
 
-def estimate_background(image, sigma=100., boxsize=(90, 199), simple=False):
+def estimate_background(image: np.ndarray, sigma=100., boxsize=(90, 199),
+                        simple=False) -> np.ndarray:
     '''Function estimates the background of provided image.
 
     Parameters
@@ -115,7 +116,7 @@ def estimate_background(image, sigma=100., boxsize=(90, 199), simple=False):
     return bkg
 
 
-def get_threshold(image, local=False, block_size=11, offset=0):
+def get_threshold(image: np.ndarray, local=False, block_size=11, offset=0) -> np.ndarray:
     '''Function calculates the best thresholding value to binarise the image
 
     Parameters
@@ -151,7 +152,8 @@ def get_threshold(image, local=False, block_size=11, offset=0):
     return thresholded
 
 
-def gradient_watershed(image, threshold, magn, debug=False, altMarker=False):
+def gradient_watershed(image: np.ndarray, threshold: np.ndarray, magn: float,
+                       debug=False, altMarker=False) -> np.ndarray:
     '''Function calculates a segmentation map based upon gradient-esques maps
        and watershedding.
 
@@ -163,6 +165,9 @@ def gradient_watershed(image, threshold, magn, debug=False, altMarker=False):
 
     threshold : np.ndarray, 2D
         Binary thresholded image.
+
+    magn: float
+        Magnification of the image as determined by getMagnification.
 
     debug : bool, optional
         If True then various graphs of the functions intermediate state
@@ -207,7 +212,24 @@ def gradient_watershed(image, threshold, magn, debug=False, altMarker=False):
     return labels
 
 
-def main(filename, debug, noplot):
+def main(filename, debug: int, noplot: bool):
+    '''
+
+    Parameters
+    ----------
+
+    filename :
+
+    debug : int
+
+    noplot : bool
+
+    Returns
+    -------
+
+    None
+
+    '''
 
     if filename is None:
         raise IOError("No file provided!!")

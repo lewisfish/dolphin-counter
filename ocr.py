@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
-from skimage.morphology import remove_small_objects, label
+from typing import List
 import warnings
+from skimage.morphology import remove_small_objects, label
 warnings.filterwarnings('ignore', category=FutureWarning)
 import tensorflow as tf
 
@@ -22,7 +23,7 @@ def _initModel():
         -------
 
         model : tensorflow.python.keras.engine.sequential.Sequential
-            The ML trained model
+            The ML trained model.
     '''
 
     model = tf.keras.models.Sequential()
@@ -45,7 +46,7 @@ def _initModel():
     return model
 
 
-def _processLabels(image, stats, label):
+def _processLabels(image: np.ndarray, stats: List, label: int) -> np.ndarray:
     '''Function returns image of a single digit cropped from labeled image and
        resized for ML model
 
@@ -87,7 +88,7 @@ def _processLabels(image, stats, label):
     return digit
 
 
-def getMagnification(filename, debug=False):
+def getMagnification(filename: str, debug=False) -> float:
     '''Function uses ML OCR to determine the magnification of the frame from
        the drone video.
 
@@ -193,17 +194,17 @@ if __name__ == '__main__':
     import glob as gb
     import time
 
-    files = gb.glob("run/*.png")
+    files = gb.glob("large/*.png")
 
     files.sort()
     # Init ML model
-    model = _initModel()
+    # model = _initModel()
 
     # run tests on 1.0x magnification
     for i, file in enumerate(files):
         print(f"{i+1}/{len(files)}")
         start = time.time()
-        magnification = getMagnification(file, model, debug=False)
+        magnification = getMagnification(file, debug=False)
 
         assert magnification - 1.0 < 0.2, print(file, magnification)
         finish = time.time()

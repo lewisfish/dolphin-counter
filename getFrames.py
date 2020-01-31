@@ -1,8 +1,9 @@
-import cv2
 from argparse import ArgumentParser
+from typing import List, Tuple
+import cv2
 
 
-def getTimes(file, fps):
+def getTimes(file: str, fps: float) -> Tuple(List[int], int, int):
     '''Function takes a filename and returns times in seconds from an expected
        format of hr:min:sec #frames
        Where #frames is the number of frames to return after this timestamp.
@@ -13,6 +14,9 @@ def getTimes(file, fps):
 
     file : str
         Name of file to open and process.
+
+    fps : float
+        Frames per second of the target video.
 
     Returns
     -------
