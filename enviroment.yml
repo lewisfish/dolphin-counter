@@ -7,9 +7,9 @@ dependencies:
   - numpy
   - scikit-image=0.16.2
   - matplotlib
-  - pytesseract
   - python=3.7
   - tensorflow
   - pandas
+  - scikit-learn
 prefix: /home/lewis/anaconda3/envs/image
 
