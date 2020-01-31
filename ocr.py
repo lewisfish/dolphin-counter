@@ -87,7 +87,7 @@ def _processLabels(image, stats, label):
     return digit
 
 
-def getMagnification(filename, model, debug=False):
+def getMagnification(filename, debug=False):
     '''Function uses ML OCR to determine the magnification of the frame from
        the drone video.
 
@@ -109,13 +109,14 @@ def getMagnification(filename, model, debug=False):
             The determined magnification level of the drone video.
 
     '''
+    from setting import model
+
     if debug:
         import matplotlib.pyplot as plt
         fig, axs = plt.subplots(1, 3)
 
     # Open image and convert to grayscale
     img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     array = img
     array = array[92:130, 24:140]
 
@@ -127,6 +128,7 @@ def getMagnification(filename, model, debug=False):
     # convert image back to binary and uint8 type
     thresh = np.where(thresh > 0, 255, 0)
     thresh = np.array(thresh, "uint8")
+
     if debug:
         axs[0].imshow(array)
     if np.mean(thresh) > 100.:
