@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
-from skimage import io
-from skimage.morphology import remove_small_objects, label, area_closing
+from skimage.morphology import remove_small_objects, label
 import warnings
 warnings.filterwarnings('ignore', category=FutureWarning)
 import tensorflow as tf
@@ -115,7 +114,7 @@ def getMagnification(filename, model, debug=False):
         fig, axs = plt.subplots(1, 3)
 
     # Open image and convert to grayscale
-    img = io.imread(filename)
+    img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     array = img
     array = array[92:130, 24:140]
