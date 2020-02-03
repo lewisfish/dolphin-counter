@@ -2,13 +2,13 @@ from copy import copy
 import sys
 import time
 
+import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 import matplotlib.patches as mpatches
 from scipy import ndimage as ndi
 
-from skimage import io
 from skimage.color import rgb2ycbcr
 from skimage.filters import threshold_yen, rank, meijering, threshold_local
 from skimage.measure import regionprops, label
@@ -32,6 +32,26 @@ class Engine(object):
     def __call__(self, filename):
         '''This calls the function when engine is called on pool'''
         return main(filename, *self.parameters)
+
+
+def redRatio(image: np.ndarray) -> np.ndarray:
+    '''
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    '''
+
+    reds = image[:, :, 0]
+    blues = image[:, :, 1]
+    greens = image[:, :, 2]
+
+    ratio = reds / (blues + greens)
+
+    return ratio
 
 
 def createMask(image: np.ndarray, factor=1.3) -> np.ndarray:
@@ -212,7 +232,70 @@ def gradient_watershed(image: np.ndarray, threshold: np.ndarray, magn: float,
     return labels
 
 
-def main(filename, debug: int, noplot: bool):
+def method1(image, gray, debug=0):
+
+    # create mask based upon red values
+    # Theory is that dolphins should have more red than the sea...
+    imgmask = createMask(image)
+
+    # probably should do something better with imgmask other than just take red channel...
+    # setup code such that can drop in different methods to compare effectiveness...
+
+    # estimate background then threshold it to get a mask
+    background = estimate_background(gray, sigma=100.)
+    bkgMask = invert(get_threshold(background)).astype(int)
+    maskArea = 1. - ((np.sum(bkgMask)) / (bkgMask.shape[0]*bkgMask.shape[1]))
+    if maskArea > .45:
+        bkgFactor = 0.0
+        imgmask = imgmask[:, :, 0]
+    else:
+        bkgFactor = 1.1
+        # combine masks
+        imgmask = imgmask[:, :, 0] * bkgMask
+
+    # convert to binary
+    imgmask = np.where(imgmask > 0, 1, 0)
+
+    # subtract background, apply mask and renormalise
+    backgroundSubtracted = gray - (bkgFactor*background)
+    if maskArea < 0.45:
+        backgroundSubtracted *= bkgMask
+    backgroundSubtracted = backgroundSubtracted / np.amax(np.abs(backgroundSubtracted))
+    backgroundSubtracted = img_as_ubyte(backgroundSubtracted)
+
+    if debug > 2:
+        labels = ["gray", "background", "backgroundSubtracted", "imgmask"]
+        cmaps = [plt.cm.gray for i in range(0, 4)]
+        figd, axs = debug_fig(gray, background, backgroundSubtracted, imgmask, labels, cmaps, pos=1)
+
+        return backgroundSubtracted, imgmask, axs
+
+    return backgroundSubtracted, imgmask, None
+
+
+def method2(image, gray, dolpLength, debug=0):
+    from scipy.stats import sigmaclip
+    from skimage.morphology import skeletonize, remove_small_holes
+    from skimage.feature import peak_local_max
+
+    red_ratio = image[:, :, 0] > 0.55
+    mask = np.zeros_like(image)
+    mask[:, :, 0] = red_ratio
+    mask[:, :, 1] = red_ratio
+    mask[:, :, 2] = red_ratio
+
+    c, low, up = sigmaclip(image*mask, low=3., high=3.)
+    background = np.mean(c) + 2.3*np.std(c)
+    image -= background
+    red_ratio = image[:, :, 0] > 0.55
+
+    red_ratio = label(red_ratio)
+    red_ratio = label(remove_small_objects(red_ratio, min_size=(dolpLength**2)/50))
+
+    return red_ratio
+
+
+def main(filename, debug: int, noplot: bool, saveplot: bool):
     '''
 
     Parameters
@@ -223,6 +306,8 @@ def main(filename, debug: int, noplot: bool):
     debug : int
 
     noplot : bool
+
+    saveplot : bool
 
     Returns
     -------
@@ -240,7 +325,8 @@ def main(filename, debug: int, noplot: bool):
     dolpLength = 22.38*magn + 22.38
 
     try:
-        img = io.imread(str(filename))
+        img = cv2.imread(str(filename))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)/255.0
     except FileNotFoundError:
         sys.exit()
 
@@ -249,39 +335,13 @@ def main(filename, debug: int, noplot: bool):
     # as this appears to work better than converting to grayscale directly...
     data = rgb2ycbcr(img)[:, :, 0]
 
-    # create mask based upon red values
-    # Theory is that dolphins should have more red than the sea...
-    imgmask = createMask(img)
-
-    # estimate background then threshold it to get a mask
-    bkg = estimate_background(data, sigma=100.)
-    bkgMask = invert(get_threshold(bkg)).astype(int)
-    maskArea = 1. - ((np.sum(bkgMask)) / (bkgMask.shape[0]*bkgMask.shape[1]))
-    if maskArea > .45:
-        bkgFactor = 0.0
-        imgmask = imgmask[:, :, 0]
+    if magn >= 4.0:
+        labs = method2(img, data, dolpLength, debug=debug)
     else:
-        bkgFactor = 1.1
-        # combine masks
-        imgmask = imgmask[:, :, 0] * bkgMask
+        # preform watershedding
+        bkgsub, imgmask, dax = method1(img, data, debug=debug)
+        labs = gradient_watershed(bkgsub, imgmask, magn, debug=debug)
 
-    # convert to binary
-    imgmask = np.where(imgmask > 0, 1, 0)
-
-    # subtract background, apply mask and renormalise
-    bkgsub = data - (bkgFactor*bkg)
-    if maskArea < 0.45:
-        bkgsub *= bkgMask
-    bkgsub = bkgsub / np.amax(np.abs(bkgsub))
-    bkgsub = img_as_ubyte(bkgsub)
-
-    if debug > 2:
-        labels = ["data", "bkg", "bkgsub", "imgmask"]
-        cmaps = [plt.cm.gray for i in range(0, 4)]
-        figd, axs = debug_fig(data, bkg, bkgsub, imgmask, labels, cmaps, pos=1)
-
-    # preform watershedding
-    labs = gradient_watershed(bkgsub, imgmask, magn, debug=debug)
     if not noplot:
         fig, ax = plt.subplots(1, 1)
         fig.canvas.manager.window.move(0, 0)
@@ -306,7 +366,7 @@ def main(filename, debug: int, noplot: bool):
             if debug > 1:
                 # need to use copy() as cant add same artist to different figs for whatever reason...
                 ellipsecopy = copy(ellipse)
-                axs[0].add_patch(ellipsecopy)
+                # dax[0].add_patch(ellipsecopy)
             if not noplot:
                 ax.add_patch(ellipse)
 
@@ -321,13 +381,14 @@ def main(filename, debug: int, noplot: bool):
     print(filename, dcount)
 
     if not noplot:
-        plt.show()
-        # if saveplot:
-        #     fig.set_figheight(11.25)
-        #     fig.set_figwidth(20)
-        #     plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
-        #                         hspace=0, wspace=0)
-        #     plt.savefig(f"output/{c:03}.png", dpi=96)
+        if saveplot:
+            fig.set_figheight(11.25)
+            fig.set_figwidth(20)
+            plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
+                                hspace=0, wspace=0)
+            plt.savefig(f"output/{str(filename.name)[:-4]}_output_001.png", dpi=96)
+        else:
+            plt.show()
 
 
 if __name__ == '__main__':
@@ -363,8 +424,6 @@ if __name__ == '__main__':
         print("Need image input!!")
         sys.exit()
 
-    pool = Pool(args.ncores)
-
     if args.folder:
         # Get all relevant files in folder
         files = Path(args.folder).glob("*.png")
@@ -372,8 +431,13 @@ if __name__ == '__main__':
         # just single file so place in a generator manually
         files = (Path(args.file) for i in range(1))
 
-    engine = Engine([args.debug, args.noplot])
+    if args.ncores != 1:
+        pool = Pool(args.ncores)
+        engine = Engine([args.debug, args.noplot, args.saveplot])
 
-    results = pool.map(engine, files)
-    pool.close()
-    pool.join()
+        results = pool.map(engine, files)
+        pool.close()
+        pool.join()
+    else:
+        for file in files:
+            main(file, args.debug, args.noplot, args.saveplot)
