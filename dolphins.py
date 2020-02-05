@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 import matplotlib.patches as mpatches
 from scipy import ndimage as ndi
+from scipy import stats
 
 from skimage.color import rgb2ycbcr
 from skimage.filters import threshold_yen, rank, meijering, threshold_local
@@ -273,26 +274,34 @@ def method1(image, gray, debug=0):
     return backgroundSubtracted, imgmask, None
 
 
+def remove_large_objects(segments, max_size):
+
+    out = np.copy(segments)
+    component_sizes = np.bincount(segments.ravel())
+
+    too_large = component_sizes > max_size
+    too_large_mask = too_large[segments]
+    out[too_large_mask] = 0
+
+    return out
+
+
 def method2(image, gray, dolpLength, debug=0):
     from scipy.stats import sigmaclip
-    from skimage.morphology import skeletonize, remove_small_holes
-    from skimage.feature import peak_local_max
 
-    red_ratio = image[:, :, 0] > 0.55
-    mask = np.zeros_like(image)
-    mask[:, :, 0] = red_ratio
-    mask[:, :, 1] = red_ratio
-    mask[:, :, 2] = red_ratio
+    red_ratio = image[:, :, 0] > .56
+    red_ratio = dilation(red_ratio, disk(2))
+    red_ratio = remove_small_objects(red_ratio, min_size=(dolpLength**2)/50.)
+    red_ratio = remove_large_objects(label(red_ratio), max_size=dolpLength**2)
 
-    c, low, up = sigmaclip(image*mask, low=3., high=3.)
-    background = np.mean(c) + 2.3*np.std(c)
-    image -= background
-    red_ratio = image[:, :, 0] > 0.55
+    if debug > 2:
+        labels = ["image - bkg", "red_ratio", "mask", "None"]
+        cmaps = [None, plt.cm.gray, plt.cm.gray, plt.cm.gray]
+        figd, axs = debug_fig(image[:,:,0], first, second, third, labels, cmaps, pos=1)
 
-    red_ratio = label(red_ratio)
-    red_ratio = label(remove_small_objects(red_ratio, min_size=(dolpLength**2)/50))
+        return red_ratio, axs
 
-    return red_ratio
+    return red_ratio, None
 
 
 def main(filename, debug: int, noplot: bool, saveplot: bool):
@@ -336,7 +345,7 @@ def main(filename, debug: int, noplot: bool, saveplot: bool):
     data = rgb2ycbcr(img)[:, :, 0]
 
     if magn >= 4.0:
-        labs = method2(img, data, dolpLength, debug=debug)
+        labs, dax = method2(img, data, dolpLength, debug=debug)
     else:
         # preform watershedding
         bkgsub, imgmask, dax = method1(img, data, debug=debug)
@@ -350,25 +359,37 @@ def main(filename, debug: int, noplot: bool, saveplot: bool):
 
     dcount = 0
 
+    areas = []
+    for r in regionprops(labs):
+        a = r.major_axis_length
+        b = r.minor_axis_length
+        ecc = r.eccentricity
+        # remove false positives
+        if a > .25*dolpLength and b > 0 and ecc > 0.7 and ecc < 0.99 and a < 2.*dolpLength:
+            areas.append(r.area)
+
+    areas, *_ = stats.sigmaclip(areas, low=2.5, high=2.5)
+
     for region in regionprops(labs):
         a = region.major_axis_length
         b = region.minor_axis_length
         ecc = region.eccentricity
         # remove false positives
         if a > .25*dolpLength and b > 0 and ecc > 0.7 and ecc < 0.99 and a < 2.*dolpLength:
-            dcount += 1
-            theta = region.orientation
-            centre = region.centroid[::-1]
-            ellipse = mpatches.Ellipse(centre, 2.*b, 2.*a,
-                                       angle=-np.rad2deg(theta),
-                                       fill=False, color="red", linewidth=2.)
+            if region.area in areas:
+                dcount += 1
+                theta = region.orientation
+                centre = region.centroid[::-1]
+                ellipse = mpatches.Ellipse(centre, 2.*b, 2.*a,
+                                           angle=-np.rad2deg(theta),
+                                           fill=False, color="red", linewidth=2.)
 
-            if debug > 1:
-                # need to use copy() as cant add same artist to different figs for whatever reason...
-                ellipsecopy = copy(ellipse)
-                # dax[0].add_patch(ellipsecopy)
-            if not noplot:
-                ax.add_patch(ellipse)
+                if debug > 1:
+                    # need to use copy() as cant add same artist to different figs for whatever reason...
+                    ellipsecopy = copy(ellipse)
+                    # dax[0].add_patch(ellipsecopy)
+                if not noplot:
+                    ax.add_patch(ellipse)
 
     finish = time.time()
     if not noplot:
@@ -386,7 +407,7 @@ def main(filename, debug: int, noplot: bool, saveplot: bool):
             fig.set_figwidth(20)
             plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
                                 hspace=0, wspace=0)
-            plt.savefig(f"output/{str(filename.name)[:-4]}_output_001.png", dpi=96)
+            plt.savefig(f"output/{str(filename.name)[:-4]}_output_003.png", dpi=96)
         else:
             plt.show()
 
