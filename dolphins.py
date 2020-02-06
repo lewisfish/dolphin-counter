@@ -1,6 +1,7 @@
 from copy import copy
 import sys
 import time
+from typing import List
 
 import cv2
 import numpy as np
@@ -13,7 +14,7 @@ from scipy import stats
 from skimage.color import rgb2ycbcr
 from skimage.filters import threshold_yen, rank, meijering, threshold_local
 from skimage.measure import regionprops, label
-from skimage.morphology import watershed, disk, remove_small_objects
+from skimage.morphology import watershed, disk, remove_small_objects, dilation
 from skimage.util import img_as_ubyte, invert
 
 from ocr import getMagnification
@@ -274,6 +275,137 @@ def method1(image, gray, debug=0):
     return backgroundSubtracted, imgmask, None
 
 
+def getNPercentileConnectedPixels(inputA, inputmask, dolphArea,
+                                  N=95, debug=0):
+    '''Function essential preforms a thresholding on an image with extra steps
+       to remove low value pixels but keeps ones that are connected to high
+       value pixels.
+
+    Parameters
+    ----------
+
+    inputA : np.ndarray, 2D
+        Input image that has already undergone some form of preprocessing.
+
+    inputMask : mp.ndarray, 2D
+
+    dolphLength : float
+        Lenght of dolphin in pixels
+
+    dolphWidth : float
+        Width of dolphin in pixels
+
+    N : float, optional
+        Float that defines which percentile of pixels to use as seeds in pixmap
+        method. Default value is 95%.
+
+    debug : bool, optional
+        If True then various graphs of the functions intermediate state
+        is plotted. Default is False.
+
+    Returns
+    -------
+
+    out : np.ndarray
+
+    axs : matplotlib axis object
+
+    '''
+
+    # get top N percent of pixels locations.
+    above_zero = inputA[inputA > 0]
+    top_N_Percent = np.percentile(above_zero.ravel(), N)
+    listpix = np.nonzero(inputA > top_N_Percent)
+    listpix = zip(*listpix)
+
+    # calculate connected pixels using above list
+    out = pixmap(inputA, listpix)
+    # label and remove small and large blobs of pixels
+    galaxy = label(out, connectivity=1)
+    if np.amax(galaxy) > 1:
+        out = remove_small_objects(galaxy, min_size=.02*dolphArea)
+        out = remove_large_objects(out, max_size=1.5*dolphArea)
+    else:
+        out = galaxy.copy()
+
+    if debug > 2:
+        labels = ["inputA", "galaxy", "out", "None"]
+        cmaps = [plt.cm.gray, None, make_random_cmap(), None]
+        figd, axs = debug_fig(inputA, galaxy, out, np.zeros_like(out), labels, cmaps, pos=2)
+        del galaxy, listpix, above_zero
+        return out, axs
+
+    del galaxy, listpix, above_zero
+    return out, None
+
+
+def pixmap(imagetmp: np.ndarray, listOPixels: List[List[int]], connectivity=1):
+    '''Function calculates which pixels are connected together, based upon
+       provided "seed" pixels.
+
+    Parameters
+    ----------
+
+    imagetmp : np.ndarray, 2D
+        Image to preform the method on.
+
+    listOPixels : List[List[int, int]]
+        List of seed pixels that are used to start the method.
+
+    connectivity : int, optional
+        Connectivity level to use when deciding which pixels are connected to
+        the 'seed' pixels.
+
+    Returns
+    -------
+
+    objectMask : np.ndarray, 2D
+        2D array bool array of connected pixels.
+
+    '''
+
+    objectMask = np.zeros_like(imagetmp)
+    # set central pixel as this is always included
+    pixels = list(listOPixels)
+    for x, y in pixels:
+        objectMask[x, y] = 1
+
+    # start list with central pixel
+    pixelsleft = True
+    # order in which to view 4 connected pixels
+    if connectivity == 1:
+        xvec = [1, -1, -1, 1]
+        yvec = [0, -1, 1, 1]
+    elif connectivity == 2:
+        # order in which to view 8 connected pixels
+        xvec = [1, 0, -1, -1, 0, 0, 1, 1]
+        yvec = [0, -1, 0, 0, 1, 1, 0, 0]
+    else:
+        print("Error, wrong value for connectivity!!!")
+        sys.exit()
+
+    # loop over pixels in pixel array
+    # check 8 connected pixels and add to array if above threshold
+    # remove pixel from array when its been operated on
+    while pixelsleft:
+        x, y = pixels.pop(0)
+        xcur = x
+        ycur = y
+        for i in range(0, len(xvec)):
+            xcur += xvec[i]
+            ycur += yvec[i]
+            if xcur >= imagetmp.shape[0] or ycur >= imagetmp.shape[1] or xcur < 0 or ycur < 0:
+                continue
+            if imagetmp[xcur, ycur] > 0 and objectMask[xcur, ycur] == 0:
+                objectMask[xcur, ycur] = 1
+                pixels.append([xcur, ycur])
+        if len(pixels) == 0:
+            pixelsleft = False
+            break
+
+    return objectMask
+
+
 def remove_large_objects(segments, max_size):
 
     out = np.copy(segments)
@@ -286,18 +418,17 @@ def remove_large_objects(segments, max_size):
     return out
 
 
-def method2(image, gray, dolpLength, debug=0):
-    from scipy.stats import sigmaclip
+def method2(image, gray, dolphArea, debug=0):
 
     red_ratio = image[:, :, 0] > .56
     red_ratio = dilation(red_ratio, disk(2))
-    red_ratio = remove_small_objects(red_ratio, min_size=(dolpLength**2)/50.)
-    red_ratio = remove_large_objects(label(red_ratio), max_size=dolpLength**2)
+    red_ratio = remove_small_objects(red_ratio, min_size=.02*dolphArea)
+    red_ratio = remove_large_objects(label(red_ratio), max_size=1.5*dolphArea)
 
     if debug > 2:
         labels = ["image - bkg", "red_ratio", "mask", "None"]
         cmaps = [None, plt.cm.gray, plt.cm.gray, plt.cm.gray]
-        figd, axs = debug_fig(image[:,:,0], first, second, third, labels, cmaps, pos=1)
+        figd, axs = debug_fig(image[:, :, 0], first, second, third, labels, cmaps, pos=1)
 
         return red_ratio, axs
 
@@ -331,7 +462,9 @@ def main(filename, debug: int, noplot: bool, saveplot: bool):
     start = time.time()
     # use magnification given by image to remove false positives
     magn = getMagnification(str(filename))
-    dolpLength = 22.38*magn + 22.38
+    dolpLength = 22.38*magn + 4.05
+    dolpWidth = dolpLength / 2.195
+    dolpArea = np.pi * dolpLength * dolpWidth
 
     try:
         img = cv2.imread(str(filename))
@@ -345,11 +478,12 @@ def main(filename, debug: int, noplot: bool, saveplot: bool):
     data = rgb2ycbcr(img)[:, :, 0]
 
     if magn >= 4.0:
-        labs, dax = method2(img, data, dolpLength, debug=debug)
+        labs, dax = method2(img, data, dolpArea, debug=debug)
     else:
-        # preform watershedding
         bkgsub, imgmask, dax = method1(img, data, debug=debug)
-        labs = gradient_watershed(bkgsub, imgmask, magn, debug=debug)
+        labs, dax = getNPercentileConnectedPixels(bkgsub, imgmask, dolpArea, debug=debug)
+        # preform watershedding
+        # labs = gradient_watershed(bkgsub, imgmask, magn, debug=debug)
 
     if not noplot:
         fig, ax = plt.subplots(1, 1)
@@ -384,10 +518,10 @@ def main(filename, debug: int, noplot: bool, saveplot: bool):
                                            angle=-np.rad2deg(theta),
                                            fill=False, color="red", linewidth=2.)
 
-                if debug > 1:
+                if debug > 2:
                     # need to use copy() as cant add same artist to different figs for whatever reason...
                     ellipsecopy = copy(ellipse)
-                    # dax[0].add_patch(ellipsecopy)
+                    dax[0].add_patch(ellipsecopy)
                 if not noplot:
                     ax.add_patch(ellipse)
 
@@ -407,9 +541,11 @@ def main(filename, debug: int, noplot: bool, saveplot: bool):
             fig.set_figwidth(20)
             plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
                                 hspace=0, wspace=0)
-            plt.savefig(f"output/{str(filename.name)[:-4]}_output_003.png", dpi=96)
+            plt.savefig(f"output/{str(filename.name)[:-4]}_output_004.png", dpi=96)
+            plt.close(fig)
         else:
             plt.show()
+            plt.close(fig)
 
 
 if __name__ == '__main__':
