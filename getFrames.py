@@ -1,9 +1,11 @@
 from argparse import ArgumentParser
+from pathlib import Path
 from typing import List, Tuple
+
 import cv2
 
 
-def getTimes(file: str, fps: float) -> Tuple(List[int], int, int):
+def getTimes(file: str, fps: float) -> Tuple[List[int], int, int]:
     '''Function takes a filename and returns times in seconds from an expected
        format of hr:min:sec #frames
        Where #frames is the number of frames to return after this timestamp.
@@ -58,6 +60,9 @@ parser.add_argument("-fo", "--folder", type=str,
 
 args = parser.parse_args()
 
+if args.folder is None:
+    args.folder = "./"
+
 # open video file
 cap = cv2.VideoCapture(args.file)  # converts to RGB by default
 fps = cap.get(cv2.CAP_PROP_FPS)  # get fps
@@ -73,9 +78,9 @@ for i, time in enumerate(times):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frameNum)
         _, frame = cap.read()
         # save frame as png
-        name = args.file[0:13] + f"_{frameNum}"
-        print(name + ".png")
-        cv2.imwrite(f"{args.folder}/" + name + ".png", frame)
+        filename = Path(args.file).name[:-4] + f"_{frameNum}.png"
+        print(f"{args.folder}" + filename)
+        cv2.imwrite(f"{args.folder}/" + filename, frame)
         frameNum += int(step)
 
 cap.release()

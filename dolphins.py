@@ -542,9 +542,11 @@ def main(filename, debug: int, noplot: bool, saveplot: bool):
             plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
                                 hspace=0, wspace=0)
             plt.savefig(f"output/{str(filename.name)[:-4]}_output_004.png", dpi=96)
+            fig.clear()
             plt.close(fig)
         else:
             plt.show()
+            fig.clear()
             plt.close(fig)
 
 

@@ -159,7 +159,6 @@ def getMagnification(filename: str, debug=False) -> float:
     digits = []
     if debug:
         axs[2].imshow(array)
-        plt.show()
 
     # Sort labels so that they are processed in left to right order
     s = stats[1:, cv2.CC_STAT_LEFT]
@@ -171,21 +170,27 @@ def getMagnification(filename: str, debug=False) -> float:
         lab = model.predict_classes(digits[-1].reshape(1, 28, 28, 1).astype('float32')/255)
         labels.append(lab)
 
-    if debug:
-        print(labels)
-
     # format and return magnification level
     first = labels[0]
     second = labels[1]
-    if len(labels) == 3:
-        third = None
+
+    if int(str(first[0])+str(second[0])) < 20.:
+        if len(labels) == 3:
+            third = None
+        else:
+            third = labels[2]
     else:
-        third = labels[2]
+        third = None
 
     if third:
         magnification = float(f"{first[0]}{second[0]}.{third[0]}")
     else:
         magnification = float(f"{first[0]}.{second[0]}")
+
+    if debug:
+        print(labels)
+        axs[0].set_title(f"{magnification}")
+        plt.show()
 
     return magnification
 
@@ -197,19 +202,17 @@ if __name__ == '__main__':
     files = gb.glob("large/*.png")
 
     files.sort()
-    # Init ML model
-    # model = _initModel()
 
     # run tests on 1.0x magnification
     for i, file in enumerate(files):
         print(f"{i+1}/{len(files)}")
         start = time.time()
-        magnification = getMagnification(file, debug=False)
+        magnification = getMagnification(file, debug=True)
 
         assert magnification - 1.0 < 0.2, print(file, magnification)
         finish = time.time()
 
-    files = gb.glob("2019_*.png")
+    files = gb.glob("small/2019_*.png")
     files.sort()
 
     # run tests on different magnifications
@@ -219,7 +222,7 @@ if __name__ == '__main__':
     for i, file in enumerate(files):
         print(f"{i+1}/{len(files)}")
         start = time.time()
-        magnification = getMagnification(file, model, debug=False)
-        assert magnification - magns[i] < 0.2, f"{file}, {magnification}"
+        magnification = getMagnification(file, debug=False)
+        assert magnification - magns[i] < 0.001, f"{file}, {magnification}"
 
         finish = time.time()
