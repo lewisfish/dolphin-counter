@@ -191,6 +191,10 @@ def getMagnification(filename: str, debug=False) -> float:
         print(labels)
         plt.show()
 
+    # if method fails just return 1.0 magnification
+    if len(labels) == 1:
+        return 1.0
+
     # format and return magnification level
     first = labels[0]
     second = labels[1]
