@@ -187,15 +187,22 @@ def getMagnification(filename: str, debug=False) -> float:
         lab = model.predict_classes(digits[-1].reshape(1, 28, 28, 1).astype('float32')/255)
         labels.append(lab)
 
+    if debug:
+        print(labels)
+        plt.show()
+
     # format and return magnification level
     first = labels[0]
     second = labels[1]
 
-    if int(str(first[0])+str(second[0])) < 20.:
-        if len(labels) == 3:
-            third = None
+    if len(labels) > 2:
+        if int(str(first[0])+str(second[0])) < 20.:
+            if len(labels) == 3:
+                third = None
+            else:
+                third = labels[2]
         else:
-            third = labels[2]
+            third = None
     else:
         third = None
 
@@ -203,11 +210,6 @@ def getMagnification(filename: str, debug=False) -> float:
         magnification = float(f"{first[0]}{second[0]}.{third[0]}")
     else:
         magnification = float(f"{first[0]}.{second[0]}")
-
-    if debug:
-        print(labels)
-        axs[0].set_title(f"{magnification}")
-        plt.show()
 
     return magnification
 
