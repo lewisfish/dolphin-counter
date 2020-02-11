@@ -23,6 +23,16 @@ class StartWindow(QMainWindow):
         self.dolphinAction.clicked.connect(self.update_image_dolph)
         self.otherAction.clicked.connect(self.update_image_other)
 
+    def intersection(self, a, b):
+
+        x = max(a[0], b[0])
+        y = max(a[1], b[1])
+        w = min(a[0]+a[2], b[0]+b[2]) - x
+        h = min(a[1]+a[3], b[1]+b[3]) - y
+        if w < 0 or h < 0:
+            return None
+        return (x, y, w, h)
+
     def init_UI(self, size):
         '''Sets up UI'''
 
@@ -66,9 +76,41 @@ class StartWindow(QMainWindow):
             self.filename = newFile
             self.camera.initialize(self.filename)
 
+    def show_ROI(self, x1, x2, y1, y2, frame):
+        # get ROI and resize it and show as an inset
+        hdiff = int((y2 - y1) / 2)
+        wdiff = int((x2 - x1) / 2)
+        ROI = frame[y1-hdiff:y2+hdiff, x1-wdiff:x2+wdiff]
+        ROI = cv2.resize(ROI, interpolation=cv2.INTER_NEAREST, dsize=(0, 0), fx=20, fy=20)
+        heightROI, widthROI, _ = ROI.shape
+        if heightROI >= frame.shape[0] or widthROI >= frame.shape[1]:
+            ROI = frame[y1-hdiff:y2+hdiff, x1-wdiff:x2+wdiff]
+            ROI = cv2.resize(ROI, interpolation=cv2.INTER_NEAREST, dsize=(0, 0), fx=10, fy=10)
+            heightROI, widthROI, _ = ROI.shape
+
+        # check if inset collides with ROI box. If so move it to opposite side.
+        inter = self.intersection([0, 0, widthROI, heightROI], [x1, y1, (x2 - x1), (y2 - y1)])
+        if inter:
+            if inter[0] < width/2:
+                frame[0:heightROI, width-widthROI:] = ROI
+                cv2.rectangle(frame, (width-widthROI, 0), (width, heightROI), (0, 0, 0), 2)
+
+            elif inter[0] > width/2:
+                frame[0:heightROI, 0:widthROI] = ROI
+                cv2.rectangle(frame, (0, 0), (widthROI, heightROI), (0, 0, 0), 2)
+
+            else:
+                print("Error!!! in show_ROI")
+                sys.exit()
+        else:
+            frame[0:heightROI, 0:widthROI] = ROI
+            cv2.rectangle(frame, (0, 0), (widthROI, heightROI), (0, 0, 0), 2)
+
+        return frame
+
     def update_image(self):
         '''Updates displayed image and shows ROI as an inset.'''
-
+        import matplotlib.pyplot as plt
         frame = self.camera.get_frame(self.currentFrameNumber)
         height, width, channel = frame.shape
         bytesPerLine = 3 * width
@@ -78,15 +120,8 @@ class StartWindow(QMainWindow):
             y1 = self.bbox[0][0] + 130  # due to cropping in anaylsis
             y2 = self.bbox[1][0] + 130
 
-            # get ROI and resize it and show as an inset
-            hdiff = int((y2-y1) / 2)
-            wdiff = int((x2-x1) / 2)
-            ROI = frame[y1-hdiff:y2+hdiff, x1-wdiff:x2+wdiff]
-            ROI = cv2.resize(ROI, interpolation=cv2.INTER_NEAREST, dsize=(0, 0), fx=20, fy=20)
-            heightROI, widthROI, _ = ROI.shape
-            frame[0:heightROI, 0:widthROI] = ROI
+            frame = self.show_ROI(x1, x2, y1, y2, frame)
             # check if green rect is in inset
-            cv2.rectangle(frame, (0, 0), (widthROI, heightROI), (0, 0, 0), 2)
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
         else:
             # Show "done!!" if no images left
