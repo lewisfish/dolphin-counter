@@ -51,7 +51,7 @@ def getTimes(file: str, fps: float) -> Tuple[List[int], int, int]:
 parser = ArgumentParser(description="Counts objects in a picture")
 
 parser.add_argument("-f", "--file", type=str,
-                    help="Path to single image to be analysed.")
+                    help="Path to video to be turned into frames")
 parser.add_argument("-t", "--times", type=str,
                     help="Path to file which contains timestamps in the format\
                     hr:min:sec fro creating stills.")

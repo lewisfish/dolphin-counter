@@ -132,11 +132,10 @@ def getMagnification(filename: str, debug=False) -> float:
 
     if debug:
         axs[0].imshow(array)
+
     if np.mean(thresh) > 100.:
         ret, thresh = cv2.threshold(array, 200, 255, cv2.THRESH_BINARY)
 
-        if debug:
-            axs[1].imshow(thresh)
         kernel = np.ones((2, 2), np.uint8)
         thresh = cv2.dilate(thresh, kernel, iterations=1)
         thresh = label(thresh)
@@ -146,8 +145,26 @@ def getMagnification(filename: str, debug=False) -> float:
         array = np.array(thresh, "uint8")
 
     else:
-        kernel = np.ones((2, 2), np.uint8)
-        array = cv2.dilate(thresh, kernel, iterations=1)
+        fraction = np.sum(thresh/255)/(thresh.shape[0]*thresh.shape[1])
+        if fraction > 0.2:
+            array = np.where(array < 50, 255, array)
+            ret2, thresh = cv2.threshold(array, 210, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+            thresh = label(thresh)
+            thresh = remove_small_objects(thresh, 100)
+            # convert image back to binary and uint8 type
+            thresh = np.where(thresh > 0, 255, 0)
+            thresh = np.array(thresh, "uint8")
+
+            kernel = np.ones((2, 2), np.uint8)
+            thresh = cv2.erode(thresh, kernel, iterations=1)
+            if debug:
+                axs[1].imshow(thresh)
+            array = thresh
+        else:
+            kernel = np.ones((2, 2), np.uint8)
+            array = thresh
+            array = cv2.dilate(thresh, kernel, iterations=1)
 
     # label again, this time with stats calculated
     output = cv2.connectedComponentsWithStats(array, 8, cv2.CV_32S)
@@ -204,7 +221,7 @@ if __name__ == '__main__':
     files.sort()
 
     # run tests on 1.0x magnification
-    for i, file in enumerate(files):
+    for i, file in enumerate(files[:631]):
         print(f"{i+1}/{len(files)}")
         start = time.time()
         magnification = getMagnification(file, debug=True)
