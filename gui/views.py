@@ -44,7 +44,7 @@ class StartWindow(QMainWindow):
 
     def writeToFile(self, filename, content):
         with open(filename, "a") as myfile:
-            myfile.write(content + "\n")
+            myfile.write("\n" + content)
 
     def show_video_inset(self, filename, currentFrame, bbox):
         '''Function initiates a popout video player of object of interest

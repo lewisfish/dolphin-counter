@@ -1,4 +1,5 @@
 import cv2
+from pathlib import Path
 
 
 def _iter_dict(videodict):
@@ -14,9 +15,34 @@ def _iter_dict(videodict):
 
 def createDict(filename):
 
+    # if user has already labelled some objects check file and only get
+    # unlablled objects from file.
+    labelPath = Path("labels.dat")
+    if labelPath.exists():
+        labelFile = open(labelPath, "r")
+        labelLines = labelFile.readlines()
+        if len(labelLines) > 0:
+            lastLine = labelLines[-1]
+            lineSplit = lastLine.split(",")
+            lastFrameNum = int(lineSplit[0])
+
+            x0 = int(lineSplit[1][3:])
+            y0 = int(lineSplit[2][:-1])
+            x1 = int(lineSplit[3][2:])
+            y1 = int(lineSplit[4][:-2])
+            lastCoords = [[x0, y0], [x1, y1]]
+        else:
+            lastFrameNum, lastCoords = None, None
+
     f = open(filename, "r")
     lines = f.readlines()
     mydict = {}
+
+    if lastFrameNum is None and lastCoords is None:
+        boolFlag = True
+    else:
+        boolFlag = False
+
     for line in lines:
         # get video filename
         if line[0] == "#":
@@ -35,13 +61,16 @@ def createDict(filename):
             x1 = int(lineSplit[3])
             y1 = int(lineSplit[4][:-2])
             coords = [[x0, y0], [x1, y1]]
+            if boolFlag:
+                if "time" not in mydict[videoFile]:
+                    mydict[videoFile]["time"] = []
+                    mydict[videoFile]["bbox"] = []
 
-            if "time" not in mydict[videoFile]:
-                mydict[videoFile]["time"] = []
-                mydict[videoFile]["bbox"] = []
+                mydict[videoFile]["time"].append(frameNum)
+                mydict[videoFile]["bbox"].append(coords)
 
-            mydict[videoFile]["time"].append(frameNum)
-            mydict[videoFile]["bbox"].append(coords)
+            if coords == lastCoords and frameNum == lastFrameNum:
+                boolFlag = True
 
     return _iter_dict(mydict)
 
