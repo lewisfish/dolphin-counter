@@ -21,6 +21,7 @@ class Camera:
         else:
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, frameNumber)
             ret, self.last_frame = self.cap.read()
+            self.last_frame = cv2.cvtColor(self.last_frame, cv2.COLOR_BGR2RGB)
         return self.last_frame
 
     def close_camera(self):

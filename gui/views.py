@@ -1,9 +1,12 @@
 import cv2
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QUrl, QTimer
 from PyQt5.QtWidgets import QLabel, QMainWindow, QWidget, QPushButton, QVBoxLayout, QApplication
 from PyQt5.QtGui import QPixmap, QImage
 
 from models import Camera
+
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtMultimediaWidgets import QVideoWidget
 
 
 class StartWindow(QMainWindow):
@@ -22,6 +25,14 @@ class StartWindow(QMainWindow):
 
         self.dolphinAction.clicked.connect(self.update_image_dolph)
         self.otherAction.clicked.connect(self.update_image_other)
+        self.showVideoInsetAction.clicked.connect(lambda: self.show_video_inset(self.filename, self.currentFrameNumber, self.bbox))
+        self.dialogs = list()
+
+    def show_video_inset(self, filename, currentFrame, bbox):
+
+        dialog = VideoPlayer(filename, currentFrame, bbox)
+        self.dialogs.append(dialog)
+        dialog.show()
 
     def intersection(self, a, b):
 
@@ -40,11 +51,13 @@ class StartWindow(QMainWindow):
         self.central_widget = QWidget()
         self.dolphinAction = QPushButton('Dolphin', self.central_widget)
         self.otherAction = QPushButton('Other', self.central_widget)
+        self.showVideoInsetAction = QPushButton("Show Video", self.central_widget)
         self.image_view = QLabel(self)
 
         self.layout = QVBoxLayout(self.central_widget)
         self.layout.addWidget(self.dolphinAction)
         self.layout.addWidget(self.otherAction)
+        self.layout.addWidget(self.showVideoInsetAction)
         self.layout.addWidget(self.image_view)
         self.setCentralWidget(self.central_widget)
 
@@ -91,6 +104,7 @@ class StartWindow(QMainWindow):
         # check if inset collides with ROI box. If so move it to opposite side.
         inter = self.intersection([0, 0, widthROI, heightROI], [x1, y1, (x2 - x1), (y2 - y1)])
         if inter:
+            height, width, _ = frame.shape
             if inter[0] < width/2:
                 frame[0:heightROI, width-widthROI:] = ROI
                 cv2.rectangle(frame, (width-widthROI, 0), (width, heightROI), (0, 0, 0), 2)
@@ -110,7 +124,7 @@ class StartWindow(QMainWindow):
 
     def update_image(self):
         '''Updates displayed image and shows ROI as an inset.'''
-        import matplotlib.pyplot as plt
+
         frame = self.camera.get_frame(self.currentFrameNumber)
         height, width, channel = frame.shape
         bytesPerLine = 3 * width
@@ -129,7 +143,7 @@ class StartWindow(QMainWindow):
                                 1, (255, 255, 255), 2, cv2.LINE_AA)
 
         # update canvas image
-        qimg = QImage(frame.data, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped()
+        qimg = QImage(frame.data, width, height, bytesPerLine, QImage.Format_RGB888)
         pixmap = QPixmap(qimg)
         pixmap = pixmap.scaled(1500, 1500, Qt.KeepAspectRatio)
         self.resize(pixmap.width(), pixmap.height())
@@ -138,6 +152,84 @@ class StartWindow(QMainWindow):
     def close_event(self, event):
         '''Closes the opened outfile on closing of QtApplication'''
         self.outFile.close()
+
+
+class VideoPlayer(QMainWindow):
+    """docstring for Second"""
+    def __init__(self, filename, currentFrame, bbox):
+        super(VideoPlayer, self).__init__()
+        self.fileName = filename
+        self.originalFrame = currentFrame
+        self.frameNumber = currentFrame
+        self.bbox = bbox
+        self.videoLength = 20  # frames to loop over including orginal frame
+
+        self.timer = QTimer(self)
+        self.timer.setTimerType(Qt.PreciseTimer)
+        self.timer.timeout.connect(self.getNextFrame)
+
+        self.camera = Camera()
+        self.camera.initialize(self.fileName)
+
+        # set up UI
+        self.central_widget = QWidget()
+        self.image_view = QLabel(self)
+
+        self.layout = QVBoxLayout(self.central_widget)
+        self.layout.addWidget(self.image_view)
+        self.setCentralWidget(self.central_widget)
+
+        self.update_image()
+        self.timer.start()
+
+    def getNextFrame(self):
+        if self.frameNumber <= self.originalFrame + self.videoLength:
+            self.frameNumber += 1
+        else:
+            self.frameNumber = self.originalFrame - self.videoLength
+
+        self.update_image()
+
+    def show_ROI(self, x1, x2, y1, y2):
+        # get ROI
+        hdiff = int((y2 - y1))
+        wdiff = int((x2 - x1))
+
+        return y1-hdiff, y2+hdiff, x1-wdiff, x2+wdiff
+
+    def update_image(self):
+        '''Updates displayed image and shows ROI as an inset.'''
+        import numpy as np
+        frame = self.camera.get_frame(self.frameNumber)
+        height, width, channel = frame.shape
+        bytesPerLine = 3 * width
+
+        x1 = self.bbox[0][1] - 50
+        x2 = self.bbox[1][1] + 50
+        y1 = self.bbox[0][0] + 130 - 50  # due to cropping in anaylsis
+        y2 = self.bbox[1][0] + 130 + 50
+
+        x1 = max(0, x1)
+        x2 = min(width, x2)
+
+        y1 = max(0, y1)
+        y2 = min(height, y2)
+
+        y1, y2, x1, x2 = self.show_ROI(x1, x2, y1, y2)
+
+        # update canvas image
+        newimage = frame[y1:y2, x1:x2].astype("uint8")
+
+        h, w, _ = newimage.shape
+        bytesPerLine = 3 * w
+        pimg = QImage(newimage, w, h, bytesPerLine, QImage.Format_RGB888)
+        pixmap = QPixmap(pimg)
+        self.image_view.setPixmap(pixmap)
+
+    def closeEvent(self, event):
+        '''Closes the opened outfile on closing of QtApplication'''
+        self.timer.stop()
+        self.camera.close_camera()
 
 
 if __name__ == '__main__':
