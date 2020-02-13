@@ -2,6 +2,9 @@ import cv2
 
 
 def _iter_dict(videodict):
+    '''make dict into a generator yield the pertinent values and keys.
+    '''
+
     for key in videodict:
         frames = videodict[key]["time"]
         bboxs = videodict[key]["bbox"]
@@ -15,6 +18,7 @@ def createDict(filename):
     lines = f.readlines()
     mydict = {}
     for line in lines:
+        # get video filename
         if line[0] == "#":
             videoFile = line[1:].strip()
             mydict[videoFile] = {}
@@ -22,6 +26,7 @@ def createDict(filename):
             fps = cap.get(cv2.CAP_PROP_FPS)  # get fps
             cap.release()
         else:
+            # store framenumber and bbox in a dict
             lineSplit = line.split(",")
             frameNum = int(lineSplit[0])
 

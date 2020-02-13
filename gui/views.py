@@ -1,7 +1,8 @@
 import cv2
 from PyQt5.QtCore import Qt, QUrl, QTimer
-from PyQt5.QtWidgets import QLabel, QMainWindow, QWidget, QPushButton, QVBoxLayout, QApplication
+from PyQt5.QtWidgets import QLabel, QMainWindow, QWidget, QPushButton, QApplication, QVBoxLayout, QHBoxLayout, QTextEdit
 from PyQt5.QtGui import QPixmap, QImage
+from PyQt5 import uic
 
 from models import Camera
 
@@ -15,20 +16,39 @@ class StartWindow(QMainWindow):
 
         self.genny = generatorFile
         self.filename, self.currentFrameNumber, self.bbox = next(self.genny)
-        self.outFile = open("labels.dat", "w")
+        # output is framenumber, bbox, class
+        self.outFile = "labels.dat"
 
         self.camera = Camera()
         self.camera.initialize(self.filename)
 
-        self.init_UI(size)
+        mainWindow = uic.loadUi("gui/mainwindow.ui", self)
         self.update_image()
 
-        self.dolphinAction.clicked.connect(self.update_image_dolph)
-        self.otherAction.clicked.connect(self.update_image_other)
+        # get button presses and send appropriate class to function
+        self.dolphinAction.clicked.connect(lambda ch, i=0: self.saveLabelgetNextImage(i))
+        self.whaleAction.clicked.connect(lambda ch, i=1: self.saveLabelgetNextImage(i))
+        self.fishAction.clicked.connect(lambda ch, i=2: self.saveLabelgetNextImage(i))
+        self.turtleAction.clicked.connect(lambda ch, i=3: self.saveLabelgetNextImage(i))
+        self.sbirdAction.clicked.connect(lambda ch, i=4: self.saveLabelgetNextImage(i))
+        self.fbirdAction.clicked.connect(lambda ch, i=5: self.saveLabelgetNextImage(i))
+        self.logAction.clicked.connect(lambda ch, i=6: self.saveLabelgetNextImage(i))
+        self.trashAction.clicked.connect(lambda ch, i=7: self.saveLabelgetNextImage(i))
+        self.waveAction.clicked.connect(lambda ch, i=8: self.saveLabelgetNextImage(i))
+        self.wcrestAction.clicked.connect(lambda ch, i=9: self.saveLabelgetNextImage(i))
+        self.boatAction.clicked.connect(lambda ch, i=10: self.saveLabelgetNextImage(i))
+        self.glareAction.clicked.connect(lambda ch, i=11: self.saveLabelgetNextImage(i))
+
         self.showVideoInsetAction.clicked.connect(lambda: self.show_video_inset(self.filename, self.currentFrameNumber, self.bbox))
         self.dialogs = list()
 
+    def writeToFile(self, filename, content):
+        with open(filename, "a") as myfile:
+            myfile.write(content + "\n")
+
     def show_video_inset(self, filename, currentFrame, bbox):
+        '''Function initiates a popout video player of object of interest
+        '''
 
         dialog = VideoPlayer(filename, currentFrame, bbox)
         self.dialogs.append(dialog)
@@ -44,35 +64,12 @@ class StartWindow(QMainWindow):
             return None
         return (x, y, w, h)
 
-    def init_UI(self, size):
-        '''Sets up UI'''
-
-        self.size = size
-        self.central_widget = QWidget()
-        self.dolphinAction = QPushButton('Dolphin', self.central_widget)
-        self.otherAction = QPushButton('Other', self.central_widget)
-        self.showVideoInsetAction = QPushButton("Show Video", self.central_widget)
-        self.image_view = QLabel(self)
-
-        self.layout = QVBoxLayout(self.central_widget)
-        self.layout.addWidget(self.dolphinAction)
-        self.layout.addWidget(self.otherAction)
-        self.layout.addWidget(self.showVideoInsetAction)
-        self.layout.addWidget(self.image_view)
-        self.setCentralWidget(self.central_widget)
-
-    def update_image_dolph(self):
+    def saveLabelgetNextImage(self, item):
         '''If dolphin button clicked records object as a dolphin'''
 
-        self.outFile.write(f"{self.currentFrameNumber}, {self.bbox}, dolphin" + "\n")
+        self.writeToFile(self.outFile, f"{self.currentFrameNumber}, {self.bbox}, {item}")
+        # self.outFile.write(f"{self.currentFrameNumber}, {self.bbox}, {item}" + "\n")
         self.get_next_image_data()
-        self.update_image()
-
-    def update_image_other(self):
-        '''If other button clicked records object as other'''
-
-        self.get_next_image_data()
-        self.outFile.write(f"{self.currentFrameNumber}, {self.bbox}, other" + "\n")
         self.update_image()
 
     def get_next_image_data(self):
@@ -147,11 +144,11 @@ class StartWindow(QMainWindow):
         pixmap = QPixmap(qimg)
         pixmap = pixmap.scaled(1500, 1500, Qt.KeepAspectRatio)
         self.resize(pixmap.width(), pixmap.height())
-        self.image_view.setPixmap(pixmap)
+        self.imageAction.setPixmap(pixmap)
 
     def close_event(self, event):
         '''Closes the opened outfile on closing of QtApplication'''
-        self.outFile.close()
+        # self.outFile.close()
 
 
 class VideoPlayer(QMainWindow):
@@ -190,7 +187,7 @@ class VideoPlayer(QMainWindow):
 
         self.update_image()
 
-    def show_ROI(self, x1, x2, y1, y2):
+    def get_extent_ROI(self, x1, x2, y1, y2):
         # get ROI
         hdiff = int((y2 - y1))
         wdiff = int((x2 - x1))
@@ -199,23 +196,24 @@ class VideoPlayer(QMainWindow):
 
     def update_image(self):
         '''Updates displayed image and shows ROI as an inset.'''
-        import numpy as np
+
         frame = self.camera.get_frame(self.frameNumber)
         height, width, channel = frame.shape
         bytesPerLine = 3 * width
 
+        # add 50 pixels to each side to increase video size
         x1 = self.bbox[0][1] - 50
         x2 = self.bbox[1][1] + 50
-        y1 = self.bbox[0][0] + 130 - 50  # due to cropping in anaylsis
+        y1 = self.bbox[0][0] + 130 - 50  # due to cropping in analysis
         y2 = self.bbox[1][0] + 130 + 50
 
+        # constrain ROI to within orignal frame
         x1 = max(0, x1)
         x2 = min(width, x2)
-
         y1 = max(0, y1)
         y2 = min(height, y2)
 
-        y1, y2, x1, x2 = self.show_ROI(x1, x2, y1, y2)
+        y1, y2, x1, x2 = self.get_extent_ROI(x1, x2, y1, y2)
 
         # update canvas image
         newimage = frame[y1:y2, x1:x2].astype("uint8")
