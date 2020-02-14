@@ -18,6 +18,7 @@ class StartWindow(QMainWindow):
         self.filename, self.currentFrameNumber, self.bbox = next(self.genny)
         # output is framenumber, bbox, class
         self.outFile = "labels.dat"
+        self.dialogs = list()
 
         self.camera = Camera()
         self.camera.initialize(self.filename)
@@ -38,9 +39,6 @@ class StartWindow(QMainWindow):
         self.wcrestAction.clicked.connect(lambda ch, i=9: self.saveLabelgetNextImage(i))
         self.boatAction.clicked.connect(lambda ch, i=10: self.saveLabelgetNextImage(i))
         self.glareAction.clicked.connect(lambda ch, i=11: self.saveLabelgetNextImage(i))
-
-        self.showVideoInsetAction.clicked.connect(lambda: self.show_video_inset(self.filename, self.currentFrameNumber, self.bbox))
-        self.dialogs = list()
 
     def writeToFile(self, filename, content):
         with open(filename, "a") as myfile:
@@ -67,6 +65,7 @@ class StartWindow(QMainWindow):
     def saveLabelgetNextImage(self, item):
         '''If dolphin button clicked records object as a dolphin'''
 
+        self.dialogs[-1].close()
         self.writeToFile(self.outFile, f"{self.currentFrameNumber}, {self.bbox}, {item}")
         # self.outFile.write(f"{self.currentFrameNumber}, {self.bbox}, {item}" + "\n")
         self.get_next_image_data()
@@ -145,6 +144,8 @@ class StartWindow(QMainWindow):
         pixmap = pixmap.scaled(1500, 1500, Qt.KeepAspectRatio)
         self.resize(pixmap.width(), pixmap.height())
         self.imageAction.setPixmap(pixmap)
+
+        self.show_video_inset(self.filename, self.currentFrameNumber, self.bbox)
 
     def close_event(self, event):
         '''Closes the opened outfile on closing of QtApplication'''
