@@ -39,6 +39,8 @@ def createDict(filename):
             lastCoords = [[x0, y0], [x1, y1]]
         else:
             lastFrameNum, lastCoords = None, None
+    else:
+        lastFrameNum, lastCoords = None, None
 
     f = open(filename, "r")
     lines = f.readlines()
