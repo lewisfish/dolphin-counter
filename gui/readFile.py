@@ -1,5 +1,7 @@
-import cv2
 from pathlib import Path
+import sys
+
+import cv2
 
 
 def _iter_dict(videodict):
@@ -7,7 +9,11 @@ def _iter_dict(videodict):
     '''
 
     for key in videodict:
-        frames = videodict[key]["time"]
+        try:
+            frames = videodict[key]["time"]
+        except KeyError:
+            print("No more objects to be analysed!!!")
+            sys.exit()
         bboxs = videodict[key]["bbox"]
         for i, j in zip(frames, bboxs):
             yield key, i, j

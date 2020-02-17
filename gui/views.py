@@ -1,13 +1,10 @@
 import cv2
-from PyQt5.QtCore import Qt, QUrl, QTimer
-from PyQt5.QtWidgets import QLabel, QMainWindow, QWidget, QPushButton, QApplication, QVBoxLayout, QHBoxLayout, QTextEdit
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5 import uic
 
 from models import Camera
-
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtMultimediaWidgets import QVideoWidget
 
 
 class StartWindow(QMainWindow):
@@ -48,9 +45,8 @@ class StartWindow(QMainWindow):
         '''Function initiates a popout video player of object of interest
         '''
 
-        dialog = VideoPlayer(filename, currentFrame, bbox)
+        dialog = VideoPlayer(self.insetVideo, filename, currentFrame, bbox)
         self.dialogs.append(dialog)
-        dialog.show()
 
     def intersection(self, a, b):
 
@@ -67,7 +63,6 @@ class StartWindow(QMainWindow):
 
         self.dialogs[-1].close()
         self.writeToFile(self.outFile, f"{self.currentFrameNumber}, {self.bbox}, {item}")
-        # self.outFile.write(f"{self.currentFrameNumber}, {self.bbox}, {item}" + "\n")
         self.get_next_image_data()
         self.update_image()
 
@@ -85,39 +80,6 @@ class StartWindow(QMainWindow):
             self.filename = newFile
             self.camera.initialize(self.filename)
 
-    def show_ROI(self, x1, x2, y1, y2, frame):
-        # get ROI and resize it and show as an inset
-        hdiff = int((y2 - y1) / 2)
-        wdiff = int((x2 - x1) / 2)
-        ROI = frame[y1-hdiff:y2+hdiff, x1-wdiff:x2+wdiff]
-        ROI = cv2.resize(ROI, interpolation=cv2.INTER_NEAREST, dsize=(0, 0), fx=20, fy=20)
-        heightROI, widthROI, _ = ROI.shape
-        if heightROI >= frame.shape[0] or widthROI >= frame.shape[1]:
-            ROI = frame[y1-hdiff:y2+hdiff, x1-wdiff:x2+wdiff]
-            ROI = cv2.resize(ROI, interpolation=cv2.INTER_NEAREST, dsize=(0, 0), fx=10, fy=10)
-            heightROI, widthROI, _ = ROI.shape
-
-        # check if inset collides with ROI box. If so move it to opposite side.
-        inter = self.intersection([0, 0, widthROI, heightROI], [x1, y1, (x2 - x1), (y2 - y1)])
-        if inter:
-            height, width, _ = frame.shape
-            if inter[0] < width/2:
-                frame[0:heightROI, width-widthROI:] = ROI
-                cv2.rectangle(frame, (width-widthROI, 0), (width, heightROI), (0, 0, 0), 2)
-
-            elif inter[0] > width/2:
-                frame[0:heightROI, 0:widthROI] = ROI
-                cv2.rectangle(frame, (0, 0), (widthROI, heightROI), (0, 0, 0), 2)
-
-            else:
-                print("Error!!! in show_ROI")
-                sys.exit()
-        else:
-            frame[0:heightROI, 0:widthROI] = ROI
-            cv2.rectangle(frame, (0, 0), (widthROI, heightROI), (0, 0, 0), 2)
-
-        return frame
-
     def update_image(self):
         '''Updates displayed image and shows ROI as an inset.'''
 
@@ -130,7 +92,20 @@ class StartWindow(QMainWindow):
             y1 = self.bbox[0][0] + 130  # due to cropping in anaylsis
             y2 = self.bbox[1][0] + 130
 
-            frame = self.show_ROI(x1, x2, y1, y2, frame)
+            hdiff = int((y2 - y1) / 2)
+            wdiff = int((x2 - x1) / 2)
+
+            inset = frame[y1-hdiff:y2+hdiff, x1-wdiff:x2+wdiff].copy()
+            insetHeight, insetWidth, channel = inset.shape
+            bytesPerLine = 3 * insetWidth
+
+            insetQimg = QImage(inset.data, insetWidth, insetHeight, bytesPerLine, QImage.Format_RGB888)
+            insetPixmap = QPixmap(insetQimg)
+            insetPixmap = insetPixmap.scaled(300, 300, Qt.KeepAspectRatio)
+            self.resize(insetPixmap.width(), insetPixmap.height())
+
+            self.insetImage.setPixmap(insetPixmap)
+
             # check if green rect is in inset
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
         else:
@@ -139,23 +114,22 @@ class StartWindow(QMainWindow):
                                 1, (255, 255, 255), 2, cv2.LINE_AA)
 
         # update canvas image
+        bytesPerLine = 3 * width
         qimg = QImage(frame.data, width, height, bytesPerLine, QImage.Format_RGB888)
-        pixmap = QPixmap(qimg)
-        pixmap = pixmap.scaled(1500, 1500, Qt.KeepAspectRatio)
-        self.resize(pixmap.width(), pixmap.height())
-        self.imageAction.setPixmap(pixmap)
+        self.pixmap = QPixmap(qimg)
+        self.pixmap = self.pixmap.scaled(1550, 787)
+
+        self.resize(self.pixmap.width(), self.pixmap.height())
+        self.imageAction.setPixmap(self.pixmap)
 
         self.show_video_inset(self.filename, self.currentFrameNumber, self.bbox)
-
-    def close_event(self, event):
-        '''Closes the opened outfile on closing of QtApplication'''
-        # self.outFile.close()
 
 
 class VideoPlayer(QMainWindow):
     """docstring for Second"""
-    def __init__(self, filename, currentFrame, bbox):
+    def __init__(self, insetVideo, filename, currentFrame, bbox):
         super(VideoPlayer, self).__init__()
+
         self.fileName = filename
         self.originalFrame = currentFrame
         self.frameNumber = currentFrame
@@ -170,12 +144,7 @@ class VideoPlayer(QMainWindow):
         self.camera.initialize(self.fileName)
 
         # set up UI
-        self.central_widget = QWidget()
-        self.image_view = QLabel(self)
-
-        self.layout = QVBoxLayout(self.central_widget)
-        self.layout.addWidget(self.image_view)
-        self.setCentralWidget(self.central_widget)
+        self.image_view = insetVideo
 
         self.update_image()
         self.timer.start()
@@ -217,12 +186,22 @@ class VideoPlayer(QMainWindow):
         y1, y2, x1, x2 = self.get_extent_ROI(x1, x2, y1, y2)
 
         # update canvas image
-        newimage = frame[y1:y2, x1:x2].astype("uint8")
+        if self.fileName == "":
+            newimage = cv2.putText(frame, 'Done!!', (750, 380), cv2.FONT_HERSHEY_SIMPLEX,
+                                   1, (255, 255, 255), 2, cv2.LINE_AA)
+        else:
+            newimage = frame[y1:y2, x1:x2].astype("uint8")
 
         h, w, _ = newimage.shape
+
         bytesPerLine = 3 * w
+
         pimg = QImage(newimage, w, h, bytesPerLine, QImage.Format_RGB888)
         pixmap = QPixmap(pimg)
+        pixmap = pixmap.scaled(325, 325)
+
+        self.resize(pixmap.width(), pixmap.height())
+
         self.image_view.setPixmap(pixmap)
 
     def closeEvent(self, event):
