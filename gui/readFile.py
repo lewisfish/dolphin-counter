@@ -55,10 +55,8 @@ def createDict(filename):
         # get video filename
         if line[0] == "#":
             videoFile = line[1:].strip()
-            mydict[videoFile] = {}
-            cap = cv2.VideoCapture(videoFile)  # converts to BGR by default
-            fps = cap.get(cv2.CAP_PROP_FPS)  # get fps
-            cap.release()
+            if videoFile not in mydict:
+                mydict[videoFile] = {}
         else:
             # store framenumber and bbox in a dict
             lineSplit = line.split(",")

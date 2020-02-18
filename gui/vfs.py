@@ -1,0 +1,106 @@
+# import the necessary packages
+from queue import Queue
+import sys
+from threading import Thread
+import time
+
+import cv2
+import numpy as np
+
+
+class FileVideoStream:
+    def __init__(self, path, start, length, queue_size=128):
+        # initialize the file video stream along with the boolean
+        # used to indicate if the thread should be stopped or not
+
+        self.stream = cv2.VideoCapture(path)
+        self.startFrame = start
+        self.videoLength = length
+        self.stream.set(cv2.CAP_PROP_POS_FRAMES, self.startFrame)
+
+        self.stopped = False
+
+        # initialize the queue used to store frames read from
+        # the video file
+        self.Q = Queue(maxsize=queue_size)
+        self.currentNumber = 0
+
+        # intialize thread
+        self.thread = Thread(target=self.update, args=())
+        self.thread.daemon = True
+
+    def start(self):
+        # start a thread to read frames from the file video stream
+        self.thread.start()
+        return self
+
+    def update(self):
+        # keep looping infinitely
+        while True:
+            # if the thread indicator variable is set, stop the
+            # thread
+            if self.stopped:
+                break
+
+            # otherwise, ensure the queue has room in it
+            if not self.Q.full():
+                # read the next frame from the file
+                (grabbed, frame) = self.stream.read()
+
+                # if the `grabbed` boolean is `False`, then we have
+                # reached the end of the video file
+                if not grabbed:
+                    self.stopped = True
+
+                # add the frame to the queue
+                self.Q.put(frame)
+                self.currentNumber += 1
+                # print(self.currentNumber)
+                if self.currentNumber == self.videoLength:
+                    self.stream.set(cv2.CAP_PROP_POS_FRAMES, self.startFrame)
+                    self.currentNumber = 0
+
+            else:
+                time.sleep(0.1)  # Rest for 10ms, we have a full queue
+
+        self.stream.release()
+
+    def read(self):
+        # return next frame in the queue
+        frame = self.Q.get()
+        return frame
+
+    # Insufficient to have consumer use while(more()) which does
+    # not take into account if the producer has reached end of
+    # file stream.
+    def running(self):
+        return self.more() or not self.stopped
+
+    def more(self):
+        # return True if there are still frames in the queue. If stream is not stopped, try to wait a moment
+        tries = 0
+        while self.Q.qsize() == 0 and not self.stopped and tries < 5:
+            time.sleep(0.1)
+            tries += 1
+
+        return self.Q.qsize() > 0
+
+    def stop(self):
+        # indicate that the thread should be stopped
+        self.stopped = True
+        # wait until stream resources are released (producer thread might be still grabbing frame)
+        self.thread.join()
+
+
+# if __name__ == '__main__':
+#     fvs = FileVideoStream("../videos+data/2019_11_23_16_16_02_506.mp4", 1, 50).start()
+#     while fvs.more():
+#         frame = fvs.read()
+
+#         cv2.putText(frame, "Queue Size: {}".format(fvs.Q.qsize()),
+#                     (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+#         cv2.imshow("frame", frame)
+#         cv2.waitKey(1)
+
+#        cv2.destroyAllWindows()
+#        fvs.stop()

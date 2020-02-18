@@ -1,10 +1,11 @@
 import cv2
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication
+from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QVBoxLayout
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5 import uic
 
 from models import Camera
+from vfs import FileVideoStream
 
 
 class StartWindow(QMainWindow):
@@ -37,16 +38,13 @@ class StartWindow(QMainWindow):
         self.boatAction.clicked.connect(lambda ch, i=10: self.saveLabelgetNextImage(i))
         self.glareAction.clicked.connect(lambda ch, i=11: self.saveLabelgetNextImage(i))
 
+        dialog = VideoPlayer(self.filename, self.currentFrameNumber)
+        self.dialogs.append(dialog)
+        self.dialogs[-1].show()
+
     def writeToFile(self, filename, content):
         with open(filename, "a") as myfile:
             myfile.write("\n" + content)
-
-    def show_video_inset(self, filename, currentFrame, bbox):
-        '''Function initiates a popout video player of object of interest
-        '''
-
-        dialog = VideoPlayer(self.insetVideo, filename, currentFrame, bbox)
-        self.dialogs.append(dialog)
 
     def intersection(self, a, b):
 
@@ -61,9 +59,11 @@ class StartWindow(QMainWindow):
     def saveLabelgetNextImage(self, item):
         '''If dolphin button clicked records object as a dolphin'''
 
-        self.dialogs[-1].close()
         self.writeToFile(self.outFile, f"{self.currentFrameNumber}, {self.bbox}, {item}")
         self.get_next_image_data()
+
+        self.dialogs[-1].update(self.filename, self.currentFrameNumber)
+
         self.update_image()
 
     def get_next_image_data(self):
@@ -122,92 +122,83 @@ class StartWindow(QMainWindow):
         self.resize(self.pixmap.width(), self.pixmap.height())
         self.imageAction.setPixmap(self.pixmap)
 
-        self.show_video_inset(self.filename, self.currentFrameNumber, self.bbox)
+    def closeEvent(self, event):
+        '''Closes the opened outfile on closing of QtApplication'''
+        for dialog in self.dialogs:
+            dialog.close()
 
 
 class VideoPlayer(QMainWindow):
     """docstring for Second"""
-    def __init__(self, insetVideo, filename, currentFrame, bbox):
+    def __init__(self, filename, currentFrame):
         super(VideoPlayer, self).__init__()
 
         self.fileName = filename
         self.originalFrame = currentFrame
-        self.frameNumber = currentFrame
-        self.bbox = bbox
-        self.videoLength = 20  # frames to loop over including orginal frame
+        self.frameNumber = 0
+        self.videoLength = 50  # frames to loop over including orginal frame
 
         self.timer = QTimer(self)
-        self.timer.setTimerType(Qt.PreciseTimer)
-        self.timer.timeout.connect(self.getNextFrame)
 
-        self.camera = Camera()
-        self.camera.initialize(self.fileName)
+        startFrame = self.originalFrame - int(self.videoLength/2)
+
+        self.fvs = self.initVideo(startFrame, self.videoLength)
+
+        self.timer.timeout.connect(self.update_image)
 
         # set up UI
-        self.image_view = insetVideo
+        self.central_widget = QWidget()
+        self.image_view = QLabel(self)
+        # allows video to automatically rescale
+        self.image_view.setScaledContents(True)
 
-        self.update_image()
-        self.timer.start()
+        self.layout = QVBoxLayout(self.central_widget)
+        self.layout.addWidget(self.image_view)
+        self.setCentralWidget(self.central_widget)
+        self.timer.start(40)
 
-    def getNextFrame(self):
-        if self.frameNumber <= self.originalFrame + self.videoLength:
-            self.frameNumber += 1
-        else:
-            self.frameNumber = self.originalFrame - self.videoLength
+    def update(self, name, frame):
+        self.fileName = name
+        self.originalFrame = frame
+        startFrame = max(self.originalFrame - int(self.videoLength/2), 1)
+        self.fvs.stop()
+        self.fvs.stream.release()
 
-        self.update_image()
+        self.fvs = None
+        self.fvs = self.initVideo(startFrame, self.videoLength)
 
-    def get_extent_ROI(self, x1, x2, y1, y2):
-        # get ROI
-        hdiff = int((y2 - y1))
-        wdiff = int((x2 - x1))
+    def initVideo(self, start, length):
+        return FileVideoStream(self.fileName, start, length).start()
 
-        return y1-hdiff, y2+hdiff, x1-wdiff, x2+wdiff
+    def resize(self, image, width):
+        '''Function that resize an image and keeps image ratio.
+        '''
+
+        h, w, channel = image.shape
+        ratio = width / float(w)
+        dim = (width, int(h * ratio))
+
+        return cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
 
     def update_image(self):
-        '''Updates displayed image and shows ROI as an inset.'''
 
-        frame = self.camera.get_frame(self.frameNumber)
-        height, width, channel = frame.shape
-        bytesPerLine = 3 * width
+        if not self.fvs.stopped:
+            frame = self.fvs.read()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        # add 50 pixels to each side to increase video size
-        x1 = self.bbox[0][1] - 50
-        x2 = self.bbox[1][1] + 50
-        y1 = self.bbox[0][0] + 130 - 50  # due to cropping in analysis
-        y2 = self.bbox[1][0] + 130 + 50
+            frame = self.resize(frame, 1500)
 
-        # constrain ROI to within orignal frame
-        x1 = max(0, x1)
-        x2 = min(width, x2)
-        y1 = max(0, y1)
-        y2 = min(height, y2)
+            height, width, channel = frame.shape
+            bytesPerLine = 3 * width
 
-        y1, y2, x1, x2 = self.get_extent_ROI(x1, x2, y1, y2)
+            pimg = QImage(frame, width, height, bytesPerLine, QImage.Format_RGB888)
+            pixmap = QPixmap(pimg)
 
-        # update canvas image
-        if self.fileName == "":
-            newimage = cv2.putText(frame, 'Done!!', (750, 380), cv2.FONT_HERSHEY_SIMPLEX,
-                                   1, (255, 255, 255), 2, cv2.LINE_AA)
-        else:
-            newimage = frame[y1:y2, x1:x2].astype("uint8")
-
-        h, w, _ = newimage.shape
-
-        bytesPerLine = 3 * w
-
-        pimg = QImage(newimage, w, h, bytesPerLine, QImage.Format_RGB888)
-        pixmap = QPixmap(pimg)
-        pixmap = pixmap.scaled(325, 325)
-
-        self.resize(pixmap.width(), pixmap.height())
-
-        self.image_view.setPixmap(pixmap)
+            self.image_view.setPixmap(pixmap)
 
     def closeEvent(self, event):
         '''Closes the opened outfile on closing of QtApplication'''
         self.timer.stop()
-        self.camera.close_camera()
 
 
 if __name__ == '__main__':
