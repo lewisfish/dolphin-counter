@@ -1,6 +1,6 @@
 import cv2
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QVBoxLayout,QDialog
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5 import uic
 
@@ -22,6 +22,8 @@ class StartWindow(QMainWindow):
         self.camera.initialize(self.filename)
 
         mainWindow = uic.loadUi("gui/mainwindow.ui", self)
+        self.imageAction.setScaledContents(True)
+
         self.update_image()
 
         # get button presses and send appropriate class to function
@@ -38,7 +40,7 @@ class StartWindow(QMainWindow):
         self.boatAction.clicked.connect(lambda ch, i=10: self.saveLabelgetNextImage(i))
         self.glareAction.clicked.connect(lambda ch, i=11: self.saveLabelgetNextImage(i))
 
-        dialog = VideoPlayer(self.filename, self.currentFrameNumber)
+        dialog = VideoPlayer(self.filename, self.currentFrameNumber, self)
         self.dialogs.append(dialog)
         self.dialogs[-1].show()
 
@@ -128,9 +130,9 @@ class StartWindow(QMainWindow):
             dialog.close()
 
 
-class VideoPlayer(QMainWindow):
+class VideoPlayer(QDialog):
     """docstring for Second"""
-    def __init__(self, filename, currentFrame):
+    def __init__(self, filename, currentFrame, parent=None):
         super(VideoPlayer, self).__init__()
 
         self.fileName = filename
@@ -139,7 +141,6 @@ class VideoPlayer(QMainWindow):
         self.videoLength = 50  # frames to loop over including orginal frame
 
         self.timer = QTimer(self)
-
         startFrame = self.originalFrame - int(self.videoLength/2)
 
         self.fvs = self.initVideo(startFrame, self.videoLength)
@@ -147,14 +148,13 @@ class VideoPlayer(QMainWindow):
         self.timer.timeout.connect(self.update_image)
 
         # set up UI
-        self.central_widget = QWidget()
         self.image_view = QLabel(self)
         # allows video to automatically rescale
         self.image_view.setScaledContents(True)
 
-        self.layout = QVBoxLayout(self.central_widget)
+        self.layout = QVBoxLayout()
         self.layout.addWidget(self.image_view)
-        self.setCentralWidget(self.central_widget)
+        self.setLayout(self.layout)
         self.timer.start(40)
 
     def update(self, name, frame):
