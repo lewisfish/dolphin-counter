@@ -1,11 +1,10 @@
-# import the necessary packages
+# Adapted from imutils
 from queue import Queue
 import sys
 from threading import Thread
 import time
 
 import cv2
-import numpy as np
 
 
 class FileVideoStream:
@@ -90,17 +89,3 @@ class FileVideoStream:
         self.stopped = True
         # wait until stream resources are released (producer thread might be still grabbing frame)
         self.thread.join()
-
-
-# if __name__ == '__main__':
-#     fvs = FileVideoStream("../videos+data/2019_11_23_16_16_02_506.mp4", 1, 50).start()
-#     while fvs.more():
-#         frame = fvs.read()
-
-#         cv2.putText(frame, "Queue Size: {}".format(fvs.Q.qsize()),
-#                     (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-#         cv2.imshow("frame", frame)
-#         cv2.waitKey(1)
-
-#        cv2.destroyAllWindows()
-#        fvs.stop()

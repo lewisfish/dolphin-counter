@@ -1,8 +1,8 @@
 import cv2
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QVBoxLayout,QDialog
-from PyQt5.QtGui import QPixmap, QImage
 from PyQt5 import uic
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QVBoxLayout, QDialog
 
 from models import Camera
 from vfs import FileVideoStream
@@ -12,18 +12,22 @@ class StartWindow(QMainWindow):
     def __init__(self, size, generatorFile):
         super().__init__()
 
-        self.genny = generatorFile
-        self.filename, self.currentFrameNumber, self.bbox = next(self.genny)
+        self.inputGenerator = generatorFile
+        self.filename, self.currentFrameNumber, self.bbox = next(self.inputGenerator)
         # output is framenumber, bbox, class
         self.outFile = "labels.dat"
         self.dialogs = list()
 
+        # init "camera" which grabs frames from video to display
         self.camera = Camera()
         self.camera.initialize(self.filename)
 
+        # LoadUi designed with QtCreator
         mainWindow = uic.loadUi("gui/mainwindow.ui", self)
-        self.imageAction.setScaledContents(True)
 
+        # Auto scale image when window resized
+        self.imageAction.setScaledContents(True)
+        # Show image
         self.update_image()
 
         # get button presses and send appropriate class to function
@@ -39,31 +43,41 @@ class StartWindow(QMainWindow):
         self.wcrestAction.clicked.connect(lambda ch, i=9: self.saveLabelgetNextImage(i))
         self.boatAction.clicked.connect(lambda ch, i=10: self.saveLabelgetNextImage(i))
         self.glareAction.clicked.connect(lambda ch, i=11: self.saveLabelgetNextImage(i))
+        self.multiDolphinAction.clicked.connect(lambda ch, i=12: self.saveLabelgetNextImage(i))
+        self.otherAction.clicked.connect(lambda ch, i=13: self.saveLabelgetNextImage(i))
 
+        # show video stream dialog
         dialog = VideoPlayer(self.filename, self.currentFrameNumber, self)
         self.dialogs.append(dialog)
         self.dialogs[-1].show()
 
     def writeToFile(self, filename, content):
+        '''Function write data to file
+
+        Parameters
+        ----------
+        filename : str
+
+        content : str
+
+        Returns
+        -------
+        None
+
+        '''
+
         with open(filename, "a") as myfile:
             myfile.write("\n" + content)
-
-    def intersection(self, a, b):
-
-        x = max(a[0], b[0])
-        y = max(a[1], b[1])
-        w = min(a[0]+a[2], b[0]+b[2]) - x
-        h = min(a[1]+a[3], b[1]+b[3]) - y
-        if w < 0 or h < 0:
-            return None
-        return (x, y, w, h)
 
     def saveLabelgetNextImage(self, item):
         '''If dolphin button clicked records object as a dolphin'''
 
+        # write out label
         self.writeToFile(self.outFile, f"{self.currentFrameNumber}, {self.bbox}, {item}")
+
         self.get_next_image_data()
 
+        # update video stream
         self.dialogs[-1].update(self.filename, self.currentFrameNumber)
 
         self.update_image()
@@ -73,7 +87,7 @@ class StartWindow(QMainWindow):
            Checks if source has changed'''
 
         try:
-            newFile, self.currentFrameNumber, self.bbox = next(self.genny)
+            newFile, self.currentFrameNumber, self.bbox = next(self.inputGenerator)
         except StopIteration:
             newFile = ""
 
@@ -120,7 +134,6 @@ class StartWindow(QMainWindow):
         qimg = QImage(frame.data, width, height, bytesPerLine, QImage.Format_RGB888)
         self.pixmap = QPixmap(qimg)
         self.pixmap = self.pixmap.scaled(1550, 787)
-
         self.resize(self.pixmap.width(), self.pixmap.height())
         self.imageAction.setPixmap(self.pixmap)
 
@@ -139,7 +152,7 @@ class VideoPlayer(QDialog):
         self.originalFrame = currentFrame
         self.frameNumber = 0
         self.videoLength = 50  # frames to loop over including orginal frame
-
+        self.setWindowTitle("Video Feed")
         self.timer = QTimer(self)
         startFrame = self.originalFrame - int(self.videoLength/2)
 
@@ -158,6 +171,9 @@ class VideoPlayer(QDialog):
         self.timer.start(40)
 
     def update(self, name, frame):
+        '''Function updates file video stream with new file, init frame etc.
+        '''
+
         self.fileName = name
         self.originalFrame = frame
         startFrame = max(self.originalFrame - int(self.videoLength/2), 1)
@@ -168,6 +184,9 @@ class VideoPlayer(QDialog):
         self.fvs = self.initVideo(startFrame, self.videoLength)
 
     def initVideo(self, start, length):
+        ''' Get FileVideoStream object
+        '''
+
         return FileVideoStream(self.fileName, start, length).start()
 
     def resize(self, image, width):

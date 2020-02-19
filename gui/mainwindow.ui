@@ -23,6 +23,21 @@
    <iconset>
     <normaloff>../dolphin_icon.png</normaloff>../dolphin_icon.png</iconset>
   </property>
+  <property name="toolTip">
+   <string>Object labeler</string>
+  </property>
+  <property name="statusTip">
+   <string>Object labeler</string>
+  </property>
+  <property name="whatsThis">
+   <string>Object labeler</string>
+  </property>
+  <property name="accessibleName">
+   <string>Object labeler</string>
+  </property>
+  <property name="accessibleDescription">
+   <string>Object labeler</string>
+  </property>
   <property name="autoFillBackground">
    <bool>false</bool>
   </property>
@@ -131,6 +146,13 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="multiDolphinAction">
+          <property name="text">
+           <string>Multiple Dolphins</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="sbirdAction">
           <property name="text">
            <string>Sitting bird</string>
@@ -138,9 +160,9 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="waveAction">
+         <widget class="QPushButton" name="otherAction">
           <property name="text">
-           <string>Wave</string>
+           <string>Other/Unkown</string>
           </property>
          </widget>
         </item>
@@ -166,6 +188,13 @@
          <widget class="QPushButton" name="glareAction">
           <property name="text">
            <string>Glare</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="waveAction">
+          <property name="text">
+           <string>Wave</string>
           </property>
          </widget>
         </item>

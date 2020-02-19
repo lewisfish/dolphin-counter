@@ -15,7 +15,7 @@ args = parser.parse_args()
 
 genVals = createDict(args.file)
 
-app = QApplication([])
+app = QApplication(["Object labeler"])
 screen = app.primaryScreen()
 size = screen.size()
 
