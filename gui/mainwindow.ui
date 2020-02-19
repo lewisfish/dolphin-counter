@@ -43,34 +43,7 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout_2">
-    <item row="1" column="0">
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout_6">
-        <item>
-         <widget class="QLabel" name="imageAction">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>1600</width>
-            <height>800</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>TextLabel</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </item>
-    <item row="1" column="2">
+    <item row="2" column="2">
      <layout class="QVBoxLayout" name="verticalLayout_5">
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -121,7 +94,194 @@
       </item>
      </layout>
     </item>
-    <item row="1" column="3">
+    <item row="0" column="0" colspan="4">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QPushButton" name="dolphinAction">
+          <property name="text">
+           <string>&amp;Dolphin</string>
+          </property>
+          <property name="shortcut">
+           <string>D</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="multiDolphinAction">
+          <property name="text">
+           <string>&amp;Multiple Dolphins</string>
+          </property>
+          <property name="shortcut">
+           <string>M</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="sbirdAction">
+          <property name="text">
+           <string>&amp;Sitting bird</string>
+          </property>
+          <property name="shortcut">
+           <string>S</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="otherAction">
+          <property name="text">
+           <string>&amp;Other/Unkown</string>
+          </property>
+          <property name="shortcut">
+           <string>O</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QPushButton" name="whaleAction">
+          <property name="text">
+           <string>&amp;Whale</string>
+          </property>
+          <property name="shortcut">
+           <string>W</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="fbirdAction">
+          <property name="text">
+           <string>Fl&amp;ying bird</string>
+          </property>
+          <property name="shortcut">
+           <string>Y</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="glareAction">
+          <property name="text">
+           <string>&amp;Glare</string>
+          </property>
+          <property name="shortcut">
+           <string>G</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="waveAction">
+          <property name="text">
+           <string>Wa&amp;ve</string>
+          </property>
+          <property name="shortcut">
+           <string>V</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QPushButton" name="fishAction">
+          <property name="text">
+           <string>Fis&amp;h</string>
+          </property>
+          <property name="shortcut">
+           <string>H</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="logAction">
+          <property name="text">
+           <string>&amp;Log</string>
+          </property>
+          <property name="shortcut">
+           <string>L</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="wcrestAction">
+          <property name="text">
+           <string>White&amp;Crest</string>
+          </property>
+          <property name="shortcut">
+           <string>C</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <widget class="QPushButton" name="turtleAction">
+          <property name="text">
+           <string>&amp;Turtle</string>
+          </property>
+          <property name="shortcut">
+           <string>T</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="trashAction">
+          <property name="text">
+           <string>&amp;Rubbish</string>
+          </property>
+          <property name="shortcut">
+           <string>R</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="boatAction">
+          <property name="text">
+           <string>&amp;Boat</string>
+          </property>
+          <property name="shortcut">
+           <string>B</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item row="2" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <widget class="QLabel" name="imageAction">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>1600</width>
+            <height>800</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>TextLabel</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item row="2" column="3">
      <spacer name="horizontalSpacer">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
@@ -134,125 +294,7 @@
       </property>
      </spacer>
     </item>
-    <item row="0" column="0" colspan="4">
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QPushButton" name="dolphinAction">
-          <property name="text">
-           <string>Dolphin</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="multiDolphinAction">
-          <property name="text">
-           <string>Multiple Dolphins</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="sbirdAction">
-          <property name="text">
-           <string>Sitting bird</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="otherAction">
-          <property name="text">
-           <string>Other/Unkown</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <item>
-         <widget class="QPushButton" name="whaleAction">
-          <property name="text">
-           <string>Whale</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="fbirdAction">
-          <property name="text">
-           <string>Flying bird</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="glareAction">
-          <property name="text">
-           <string>Glare</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="waveAction">
-          <property name="text">
-           <string>Wave</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QPushButton" name="fishAction">
-          <property name="text">
-           <string>Fish</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="logAction">
-          <property name="text">
-           <string>Log</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="wcrestAction">
-          <property name="text">
-           <string>Whitecrest</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <item>
-         <widget class="QPushButton" name="turtleAction">
-          <property name="text">
-           <string>Turtle</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="trashAction">
-          <property name="text">
-           <string>Trash</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="boatAction">
-          <property name="text">
-           <string>Boat</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </item>
-    <item row="1" column="1">
+    <item row="1" column="0">
      <spacer name="horizontalSpacer_2">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
