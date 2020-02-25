@@ -23,7 +23,7 @@ def createDict(filename):
 
     # if user has already labelled some objects check file and only get
     # unlablled objects from file.
-    labelPath = Path("labels.dat")
+    labelPath = Path("labels.csv")
     if labelPath.exists():
         labelFile = open(labelPath, "r")
         labelLines = labelFile.readlines()
@@ -32,10 +32,10 @@ def createDict(filename):
             lineSplit = lastLine.split(",")
             lastFrameNum = int(lineSplit[0])
 
-            x0 = int(lineSplit[1][3:])
-            y0 = int(lineSplit[2][:-1])
-            x1 = int(lineSplit[3][2:])
-            y1 = int(lineSplit[4][:-2])
+            x0 = int(lineSplit[1])  # int(lineSplit[1][3:])
+            y0 = int(lineSplit[2])  # int(lineSplit[2][:-1])
+            x1 = int(lineSplit[3])  # int(lineSplit[3][2:])
+            y1 = int(lineSplit[4])  # int(lineSplit[4][:-2])
             lastCoords = [[x0, y0], [x1, y1]]
         else:
             lastFrameNum, lastCoords = None, None

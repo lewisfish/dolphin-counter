@@ -15,7 +15,7 @@ class StartWindow(QMainWindow):
         self.inputGenerator = generatorFile
         self.filename, self.currentFrameNumber, self.bbox = next(self.inputGenerator)
         # output is framenumber, bbox, class
-        self.outFile = "labels.dat"
+        self.outFile = "labels.csv"
         self.dialogs = list()
 
         # init "camera" which grabs frames from video to display
@@ -73,7 +73,7 @@ class StartWindow(QMainWindow):
         '''If dolphin button clicked records object as a dolphin'''
 
         # write out label
-        self.writeToFile(self.outFile, f"{self.currentFrameNumber}, {self.bbox}, {item}")
+        self.writeToFile(self.outFile, f"{self.currentFrameNumber}, {self.bbox[0][0]}, {self.bbox[0][1]}, {self.bbox[1][0]}, {self.bbox[1][1]}, {item}")
 
         self.get_next_image_data()
 
