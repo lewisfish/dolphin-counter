@@ -88,7 +88,7 @@ def _processLabels(image: np.ndarray, stats: List, label: int) -> np.ndarray:
     return digit
 
 
-def getMagnification(filename: str, debug=False) -> float:
+def getMagnification(frame: np.ndarray, debug=False) -> float:
     '''Function uses ML OCR to determine the magnification of the frame from
        the drone video.
 
@@ -117,8 +117,9 @@ def getMagnification(filename: str, debug=False) -> float:
         fig, axs = plt.subplots(1, 3)
 
     # Open image and convert to grayscale
-    img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
-    array = img
+    array = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # array = img
     array = array[92:130, 24:140]
 
     # Threshold, dilate and then crop to ROI.

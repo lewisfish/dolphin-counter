@@ -28,7 +28,6 @@ def _getTimeDate(filename: Path) -> datetime.datetime:
     '''
     # remove folders and codec from filename
     name = filename.stem
-
     date = name[:10].split("_")
     year = int(date[0])
     month = int(date[1])
@@ -94,8 +93,12 @@ def _findStart(files: Generator[Path, None, None], targetTime: datetime.datetime
         if position == 1 and position < curPosition:
             outfile = file
             curPosition = position
-            outtimes = times.copy()
             outalts = df["Altitude/mm"]
+
+            outtimes = []
+            for t in time:
+                fmttime = datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%S.%f")
+                outtimes.append(fmttime)
 
     return outfile, outalts, outtimes, curPosition
 
@@ -140,15 +143,16 @@ def getAltitude(videoFile: str, framenumber: int, gpsdataPath="videos+data/gps-d
 
     cap.release()
 
-    dt = _getTimeDate(videoFile) + datetime.timedelta(seconds=3)  # adjust for video recording delay
+    dt = _getTimeDate(videoPath) + datetime.timedelta(seconds=3)  # adjust for video recording delay
     # form gpsdata filename
     date = str(dt.year) + str(dt.month) + str(dt.day)
     path = Path(gpsdataPath)
     files = path.glob(date + "*.csv")
-    file, alts, times, pos = _findStart(files, dt)
+    file, alts, times,  pos = _findStart(files, dt)
 
     # get the altitude
     frameTime = dt + datetime.timedelta(seconds=msec)
+
     position = bisect.bisect_left(times, frameTime)
     currentTime = times[position-1]
     currentAltitude = alts[position-1]

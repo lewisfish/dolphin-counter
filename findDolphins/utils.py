@@ -1,6 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+__all__ = ["readFileListIn", "make_random_cmap", "supressAxs", "debug_fig"]
+
+
+def readFileListIn(filename):
+    videoList = []
+    frameList = []
+    with open(filename, "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            lineSplit = line.split(",")
+            videofile = lineSplit[0]
+            framenumber = int(lineSplit[1].rstrip())
+            videoList.append(videofile)
+            frameList.append(framenumber)
+
+    return videoList, frameList
+
 
 def make_random_cmap(ncolors=256, random_state=None):
     """

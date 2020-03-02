@@ -17,8 +17,9 @@ from skimage.measure import regionprops, label
 from skimage.morphology import watershed, disk, remove_small_objects, dilation
 from skimage.util import img_as_ubyte, invert
 
+from gps import getAltitude
 from ocr import getMagnification
-from utils import debug_fig, make_random_cmap, supressAxs
+from utils import debug_fig, make_random_cmap, supressAxs, readFileListIn
 
 
 class Engine(object):
@@ -435,7 +436,7 @@ def method2(image, gray, dolphArea, debug=0):
     return red_ratio, None
 
 
-def main(filename, debug: int, noplot: bool, saveplot: bool):
+def main(filename, debug: int, noplot: bool, saveplot: bool, videoList: List[str]):
     '''
 
     Parameters
@@ -461,16 +462,20 @@ def main(filename, debug: int, noplot: bool, saveplot: bool):
 
     start = time.time()
     # use magnification given by image to remove false positives
-    magn = getMagnification(str(filename))
+    videofile = next(videoList)
+    alt = getAltitude(videofile, filename, gpsdataPath="videos+data/gps-data/")
+
+    cap = cv2.VideoCapture(videofile)  # converts to RGB by default
+    cap.set(cv2.CAP_PROP_POS_FRAMES, filename)
+    _, frame = cap.read()
+    cap.release()
+
+    magn = getMagnification(frame)
     dolpLength = 22.38*magn + 4.05
     dolpWidth = dolpLength / 2.195
     dolpArea = np.pi * dolpLength * dolpWidth
 
-    try:
-        img = cv2.imread(str(filename))
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)/255.0
-    except FileNotFoundError:
-        sys.exit()
+    img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB).astype(np.float32)/255.0
 
     img = img[130:1030, 0:1990]
     # convert to ycbcr space and take yc values
@@ -558,10 +563,8 @@ if __name__ == '__main__':
 
     parser = ArgumentParser(description="Counts objects in a picture")
 
-    parser.add_argument("-f", "--file", type=str,
-                        help="Path to single image to be analysed.")
-    parser.add_argument("-fo", "--folder", type=str,
-                        help="Path to folder of images to be analysed.")
+    parser.add_argument("-fl", "--filelist", type=str, help="Path to file that\
+                        contains list of files to be analysed.")
 
     parser.add_argument("-d", "--debug", action="count", default=0,
                         help="Display debug info.")
@@ -575,28 +578,19 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.file and args.folder:
-        print("Can not have both folder and file arguments!!")
-        sys.exit()
-
-    if args.file is None and args.folder is None:
+    if args.filelist is None:
         print("Need image input!!")
         sys.exit()
 
-    if args.folder:
-        # Get all relevant files in folder
-        files = Path(args.folder).glob("*.png")
-    else:
-        # just single file so place in a generator manually
-        files = (Path(args.file) for i in range(1))
-
+    videolist, framelist = readFileListIn(args.filelist)
+    videolist = iter(videolist)
     if args.ncores != 1:
         pool = Pool(args.ncores)
-        engine = Engine([args.debug, args.noplot, args.saveplot])
+        engine = Engine([args.debug, args.noplot, args.saveplot, videolist])
 
-        results = pool.map(engine, files)
+        results = pool.map(engine, framelist)
         pool.close()
         pool.join()
     else:
-        for file in files:
-            main(file, args.debug, args.noplot, args.saveplot)
+        for frame in framelist:
+            main(frame, args.debug, args.noplot, args.saveplot, videolist)
