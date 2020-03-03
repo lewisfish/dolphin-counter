@@ -137,9 +137,10 @@ def getAltitude(videoFile: str, framenumber: int, gpsdataPath="videos+data/gps-d
     cap.set(cv2.CAP_PROP_POS_FRAMES, framenumber)
 
     # get current position of video in msec from start
+    # need to read frame for this to work...
+    _, frame = cap.read()
     msec = cap.get(cv2.CAP_PROP_POS_MSEC)
     msec /= 1e3
-    _, frame = cap.read()
 
     cap.release()
 
