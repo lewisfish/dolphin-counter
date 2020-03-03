@@ -157,7 +157,7 @@ def getAltitude(videoFile: str, framenumber: int, gpsdataPath="videos+data/gps-d
     currentTime = times[position-1]
     currentAltitude = alts[position-1]
 
-    return currentAltitude
+    return currentAltitude / 1e3  # convert to meters
 
 
 if __name__ == '__main__':

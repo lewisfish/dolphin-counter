@@ -102,8 +102,8 @@ def createMask(image: np.ndarray, factor=1.3) -> np.ndarray:
     return mask
 
 
-def estimate_background(image: np.ndarray, sigma=100., boxsize=(90, 199),
-                        simple=False) -> np.ndarray:
+def estimate_background(image: np.ndarray, sigma=100., boxsize=(400, 832),
+                        simple=True) -> np.ndarray:
     '''Function estimates the background of provided image.
 
     Parameters
@@ -246,6 +246,7 @@ def method1(image, gray, debug=0):
 
     # estimate background then threshold it to get a mask
     background = estimate_background(gray, sigma=100.)
+
     bkgMask = invert(get_threshold(background)).astype(int)
     maskArea = 1. - ((np.sum(bkgMask)) / (bkgMask.shape[0]*bkgMask.shape[1]))
     if maskArea > .45:
@@ -315,10 +316,10 @@ def getNPercentileConnectedPixels(inputA, inputmask, dolphArea,
 
     # get top N percent of pixels locations.
     above_zero = inputA[inputA > 0]
+
     top_N_Percent = np.percentile(above_zero.ravel(), N)
     listpix = np.nonzero(inputA > top_N_Percent)
     listpix = zip(*listpix)
-
     # calculate connected pixels using above list
     out = pixmap(inputA, listpix)
     # label and remove small and large blobs of pixels
@@ -471,7 +472,8 @@ def main(filename, debug: int, noplot: bool, saveplot: bool, videoList: List[str
     cap.release()
 
     magn = getMagnification(frame)
-    dolpLength = 22.38*magn + 4.05
+    dolpLength = 1714*(magn/alt) + 16.5  # 22.38*magn + 4.05#old
+
     dolpWidth = dolpLength / 2.195
     dolpArea = np.pi * dolpLength * dolpWidth
 
