@@ -264,6 +264,8 @@ def method1(image, gray, debug=0):
     backgroundSubtracted = gray - (bkgFactor*background)
     if maskArea < 0.45:
         backgroundSubtracted *= bkgMask
+    else:
+        backgroundSubtracted *= imgmask
     backgroundSubtracted = backgroundSubtracted / np.amax(np.abs(backgroundSubtracted))
     backgroundSubtracted = img_as_ubyte(backgroundSubtracted)
 
@@ -531,6 +533,9 @@ def main(filename, debug: int, noplot: bool, saveplot: bool, videoList: List[str
                     dax[0].add_patch(ellipsecopy)
                 if not noplot:
                     ax.add_patch(ellipse)
+                # with open("output-new-test.dat", "a") as f:
+                #     p = str(filename.name).rfind("_")
+                #     f.write(f"{str(filename.name)[p+1:-4]}, {region.bbox}" + "\n")
 
     finish = time.time()
     if not noplot:
@@ -548,7 +553,7 @@ def main(filename, debug: int, noplot: bool, saveplot: bool, videoList: List[str
             fig.set_figwidth(20)
             plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
                                 hspace=0, wspace=0)
-            plt.savefig(f"output/{str(filename.name)[:-4]}_output_004.png", dpi=96)
+            # plt.savefig(f"output-harder/{str(filename.name)[:-4]}_output_004.png", dpi=96)
             fig.clear()
             plt.close(fig)
         else:

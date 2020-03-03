@@ -7,4 +7,4 @@ if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
-model = tf.keras.models.load_model('Ml-test/image_to_number_model.hdf5')
+model = tf.keras.models.load_model('findDolphins/Ml-test/image_to_number_model.hdf5')
