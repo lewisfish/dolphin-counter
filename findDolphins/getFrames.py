@@ -5,7 +5,7 @@ from typing import List, Tuple
 import cv2
 
 
-def getTimes(file: str, fps: float) -> Tuple[List[int], int, int]:
+def getTimes(file: str) -> Tuple[List[int], int, int]:
     '''Function takes a filename and returns times in seconds from an expected
        format of hr:min:sec #frames
        Where #frames is the number of frames to return after this timestamp.
@@ -17,9 +17,6 @@ def getTimes(file: str, fps: float) -> Tuple[List[int], int, int]:
     file : str
         Name of file to open and process.
 
-    fps : float
-        Frames per second of the target video.
-
     Returns
     -------
 
@@ -28,24 +25,46 @@ def getTimes(file: str, fps: float) -> Tuple[List[int], int, int]:
     '''
 
     times = []
+    videos = []
+    steps = []
+    numbframes = []
 
     with open(file, "r")as f:
         lines = f.readlines()
         for line in lines:
-            numExtraFrames = line.split(" ")
-            hour, minute, sec = numExtraFrames[0].split(":")
-            time = (int(hour) * 60*60) + (int(minute) * 60) + int(sec)
-            times.append(time)
+            if ".mp4" in line:
+                videoFlag = True
+                parts = line.split(" ")
+                video = parts[0]
+                videos.append(video)
 
-    if len(numExtraFrames) == 1:
-        return times, 1, 1
-    elif len(numExtraFrames) == 2:
-        return times, int(numExtraFrames[1]), 1
-    else:
-        step = int(numExtraFrames[2])
-        if step == -99:
-            step = fps
-        return times, int(numExtraFrames[1]), step
+                hour, minute, sec = parts[1].split(":")
+                time = (int(hour) * 60*60) + (int(minute) * 60) + int(sec)
+                times.append(time)
+
+                if len(parts) >= 3:
+                    numbframes.append(int(parts[2]))
+                    if len(parts) >= 4:
+                        steps.append(int(parts[3]))
+                else:
+                    numbframes.append(1)
+                    steps.append(1)
+
+            else:
+                numExtraFrames = line.split(" ")
+                hour, minute, sec = numExtraFrames[0].split(":")
+                time = (int(hour) * 60*60) + (int(minute) * 60) + int(sec)
+                times.append(time)
+                videos.append(None)
+
+                if len(parts) >= 3:
+                    numbframes.append(int(parts[1]))
+                    steps.append(int(parts[2]))
+                else:
+                    numbframes.append(1)
+                    steps.append(1)
+
+    return times, numbframes, steps, videos
 
 
 parser = ArgumentParser(description="Counts objects in a picture")
@@ -63,24 +82,33 @@ args = parser.parse_args()
 if args.folder is None:
     args.folder = "./"
 
-# open video file
-cap = cv2.VideoCapture(args.file)  # converts to RGB by default
-fps = cap.get(cv2.CAP_PROP_FPS)  # get fps
-
-times, rangeFrames, step = getTimes(args.times, fps)
+times, rangeFrames, steps, videos = getTimes(args.times)
 
 # loop over times to create frames
 for i, time in enumerate(times):
+    # open video file
+    if videos[i] is not None:
+        filename = Path(videos[i]).name[:-4]
+        cap = cv2.VideoCapture(videos[i])  # converts to BGR by default
+    else:
+        filename = Path(args.file).name[:-4]
+        cap = cv2.VideoCapture(args.file)
+
+    fps = cap.get(cv2.CAP_PROP_FPS)  # get fps
+    if steps[i] == -99:
+        step = fps
+    else:
+        step = steps[i]
+
     # get frame number from fps and timestamp in seconds
     frameNum = int(time * fps)
     # set position in video as frameNum
-    for i in range(1, rangeFrames):
+    for i in range(0, rangeFrames[i]):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frameNum)
         _, frame = cap.read()
         # save frame as png
-        filename = Path(args.file).name[:-4] + f"_{frameNum}.png"
-        print(f"{args.folder}" + filename)
-        cv2.imwrite(f"{args.folder}/" + filename, frame)
+        finalfilename = filename + f"_{frameNum}.png"
+        print(f"{args.folder}" + finalfilename)
+        cv2.imwrite(f"{args.folder}/" + finalfilename, frame)
         frameNum += int(step)
-
-cap.release()
+    cap.release()
