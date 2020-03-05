@@ -1,8 +1,10 @@
+from pathlib import Path
+
 import cv2
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QVBoxLayout, QDialog
+from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QVBoxLayout, QDialog, QFileDialog
 
 from models import Camera
 from vfs import FileVideoStream
@@ -12,8 +14,12 @@ class StartWindow(QMainWindow):
     def __init__(self, size, generatorFile):
         super().__init__()
 
+        self.videoDir = Path(QFileDialog.getExistingDirectory(self, "Select Video Directory"))
+
         self.inputGenerator = generatorFile
         self.filename, self.currentFrameNumber, self.bbox = next(self.inputGenerator)
+        self.filename = self.videoDir / Path(self.filename)
+
         # output is framenumber, bbox, class
         self.outFile = "labels.csv"
         self.dialogs = list()
@@ -73,7 +79,7 @@ class StartWindow(QMainWindow):
         '''If dolphin button clicked records object as a dolphin'''
 
         # write out label
-        self.writeToFile(self.outFile, f"{self.currentFrameNumber}, {self.bbox[0][0]}, {self.bbox[0][1]}, {self.bbox[1][0]}, {self.bbox[1][1]}, {item}")
+        self.writeToFile(self.outFile, f"{self.filename}, {self.currentFrameNumber}, {self.bbox[0][0]}, {self.bbox[0][1]}, {self.bbox[1][0]}, {self.bbox[1][1]}, {item}")
 
         self.get_next_image_data()
 
@@ -94,6 +100,7 @@ class StartWindow(QMainWindow):
         if newFile != self.filename:
             self.camera.close_camera()
             self.filename = newFile
+            self.filename = self.videoDir / Path(self.filename)
             self.camera.initialize(self.filename)
 
     def update_image(self):

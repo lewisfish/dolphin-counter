@@ -1,19 +1,10 @@
-from argparse import ArgumentParser
-
 from PyQt5.QtWidgets import QApplication
 
 from views import StartWindow
 from readFile import createDict
 
-parser = ArgumentParser(description="Helps label video data for ML.")
-
-parser.add_argument("-f", "--file", type=str,
-                    help="Path to file that contains frame and bbox data.")
-
-
-args = parser.parse_args()
-
-genVals = createDict(args.file)
+file = "final-output.dat"
+genVals = createDict(file)
 
 app = QApplication(["Object labeler"])
 screen = app.primaryScreen()

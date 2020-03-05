@@ -84,12 +84,19 @@ if args.folder is None:
 
 times, rangeFrames, steps, videos = getTimes(args.times)
 
+f = open("filelist.txt", "w")
+
+listVideos = list(Path(args.folder).glob("**/*.mp4"))
 # loop over times to create frames
 for i, time in enumerate(times):
     # open video file
     if videos[i] is not None:
         filename = Path(videos[i]).name[:-4]
-        cap = cv2.VideoCapture(videos[i])  # converts to BGR by default
+        for realVideo in listVideos:
+            if filename in str(realVideo):
+                filename = str(realVideo)
+                break
+        cap = cv2.VideoCapture(filename)  # converts to BGR by default
     else:
         filename = Path(args.file).name[:-4]
         cap = cv2.VideoCapture(args.file)
@@ -103,12 +110,15 @@ for i, time in enumerate(times):
     # get frame number from fps and timestamp in seconds
     frameNum = int(time * fps)
     # set position in video as frameNum
-    for i in range(0, rangeFrames[i]):
+    for j in range(0, rangeFrames[i]):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frameNum)
         _, frame = cap.read()
         # save frame as png
         finalfilename = filename + f"_{frameNum}.png"
-        print(f"{args.folder}" + finalfilename)
-        cv2.imwrite(f"{args.folder}/" + finalfilename, frame)
+        f.write(args.folder + videos[i]+","+str(frameNum)+"\n")
+        print(args.folder + videos[i]+","+str(frameNum))
+        # print(f"{args.folder}" + finalfilename)
+        # cv2.imwrite(f"{args.folder}/" + finalfilename, frame)
         frameNum += int(step)
     cap.release()
+f.close()

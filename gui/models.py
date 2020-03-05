@@ -9,7 +9,7 @@ class Camera:
         self.last_frame = np.zeros((1, 1, 3), np.uint8)
 
     def initialize(self, camera_name):
-        self.cam_name = camera_name
+        self.cam_name = str(camera_name)
         if self.cam_name == "":
             self.cap = None
         else:

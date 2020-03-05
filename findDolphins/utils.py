@@ -5,18 +5,16 @@ __all__ = ["readFileListIn", "make_random_cmap", "supressAxs", "debug_fig"]
 
 
 def readFileListIn(filename):
-    videoList = []
-    frameList = []
+    videoFrameList = []
     with open(filename, "r") as f:
         lines = f.readlines()
         for line in lines:
             lineSplit = line.split(",")
             videofile = lineSplit[0]
             framenumber = int(lineSplit[1].rstrip())
-            videoList.append(videofile)
-            frameList.append(framenumber)
+            videoFrameList.append([videofile, framenumber])
 
-    return videoList, frameList
+    return videoFrameList
 
 
 def make_random_cmap(ncolors=256, random_state=None):

@@ -43,7 +43,7 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout_2">
-    <item row="2" column="2">
+    <item row="1" column="2">
      <layout class="QVBoxLayout" name="verticalLayout_5">
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -93,6 +93,19 @@
        </layout>
       </item>
      </layout>
+    </item>
+    <item row="1" column="3">
+     <spacer name="horizontalSpacer">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
     </item>
     <item row="0" column="0" colspan="4">
      <layout class="QHBoxLayout" name="horizontalLayout">
@@ -254,7 +267,7 @@
       </item>
      </layout>
     </item>
-    <item row="2" column="0">
+    <item row="1" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -281,20 +294,7 @@
       </item>
      </layout>
     </item>
-    <item row="2" column="3">
-     <spacer name="horizontalSpacer">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>40</width>
-        <height>20</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
-    <item row="1" column="0">
+    <item row="1" column="1">
      <spacer name="horizontalSpacer_2">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>

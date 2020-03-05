@@ -12,7 +12,7 @@ class FileVideoStream:
         # initialize the file video stream along with the boolean
         # used to indicate if the thread should be stopped or not
 
-        self.stream = cv2.VideoCapture(path)
+        self.stream = cv2.VideoCapture(str(path))
         self.startFrame = start
         self.videoLength = length
         self.stream.set(cv2.CAP_PROP_POS_FRAMES, self.startFrame)

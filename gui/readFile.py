@@ -21,8 +21,8 @@ def _iter_dict(videodict):
 
 def createDict(filename):
 
-    # if user has already labelled some objects check file and only get
-    # unlablled objects from file.
+    # if user has already labeled some objects check file and only get
+    # unlabeled objects from file.
     labelPath = Path("labels.csv")
     if labelPath.exists():
         labelFile = open(labelPath, "r")
@@ -30,12 +30,13 @@ def createDict(filename):
         if len(labelLines) > 0:
             lastLine = labelLines[-1]
             lineSplit = lastLine.split(",")
-            lastFrameNum = int(lineSplit[0])
+            lastVideo = Path(lineSplit[0]).name
+            lastFrameNum = int(lineSplit[1])
 
-            x0 = int(lineSplit[1])  # int(lineSplit[1][3:])
-            y0 = int(lineSplit[2])  # int(lineSplit[2][:-1])
-            x1 = int(lineSplit[3])  # int(lineSplit[3][2:])
-            y1 = int(lineSplit[4])  # int(lineSplit[4][:-2])
+            x0 = int(lineSplit[2])
+            y0 = int(lineSplit[3])
+            x1 = int(lineSplit[4])
+            y1 = int(lineSplit[5])
             lastCoords = [[x0, y0], [x1, y1]]
         else:
             lastFrameNum, lastCoords = None, None
@@ -53,30 +54,29 @@ def createDict(filename):
 
     for line in lines:
         # get video filename
-        if line[0] == "#":
-            videoFile = line[1:].strip()
-            if videoFile not in mydict:
-                mydict[videoFile] = {}
-        else:
-            # store framenumber and bbox in a dict
-            lineSplit = line.split(",")
-            frameNum = int(lineSplit[0])
+        # store framenumber and bbox in a dict
+        lineSplit = line.split(",")
+        videoFile = lineSplit[0]
+        if videoFile not in mydict:
+            mydict[videoFile] = {}
 
-            x0 = int(lineSplit[1][2:])
-            y0 = int(lineSplit[2])
-            x1 = int(lineSplit[3])
-            y1 = int(lineSplit[4][:-2])
-            coords = [[x0, y0], [x1, y1]]
-            if boolFlag:
-                if "time" not in mydict[videoFile]:
-                    mydict[videoFile]["time"] = []
-                    mydict[videoFile]["bbox"] = []
+        frameNum = int(lineSplit[1])
 
-                mydict[videoFile]["time"].append(frameNum)
-                mydict[videoFile]["bbox"].append(coords)
+        x0 = int(lineSplit[2][2:])
+        y0 = int(lineSplit[3])
+        x1 = int(lineSplit[4])
+        y1 = int(lineSplit[5][:-2])
+        coords = [[x0, y0], [x1, y1]]
+        if boolFlag:
+            if "time" not in mydict[videoFile]:
+                mydict[videoFile]["time"] = []
+                mydict[videoFile]["bbox"] = []
 
-            if coords == lastCoords and frameNum == lastFrameNum:
-                boolFlag = True
+            mydict[videoFile]["time"].append(frameNum)
+            mydict[videoFile]["bbox"].append(coords)
+
+        if coords == lastCoords and frameNum == lastFrameNum and str(lastVideo) == videoFile:
+            boolFlag = True
 
     return _iter_dict(mydict)
 

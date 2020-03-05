@@ -319,6 +319,9 @@ def getNPercentileConnectedPixels(inputA, inputmask, dolphArea,
     # get top N percent of pixels locations.
     above_zero = inputA[inputA > 0]
 
+    if len(above_zero.ravel()) == 0:
+        return np.zeros_like(inputA), None
+
     top_N_Percent = np.percentile(above_zero.ravel(), N)
     listpix = np.nonzero(inputA > top_N_Percent)
     listpix = zip(*listpix)
@@ -439,7 +442,7 @@ def method2(image, gray, dolphArea, debug=0):
     return red_ratio, None
 
 
-def main(filename, debug: int, noplot: bool, saveplot: bool, videoList: List[str]):
+def main(filename, debug: int, noplot: bool, saveplot: bool):
     '''
 
     Parameters
@@ -460,16 +463,16 @@ def main(filename, debug: int, noplot: bool, saveplot: bool, videoList: List[str
 
     '''
 
-    if filename is None:
+    if filename[0] is None:
         raise IOError("No file provided!!")
 
     start = time.time()
     # use magnification given by image to remove false positives
-    videofile = next(videoList)
-    alt = getAltitude(videofile, filename, gpsdataPath="videos+data/gps-data/")
+    videofile = filename[1]
+    alt = getAltitude(videofile, filename[0], gpsdataPath="gps-data/")
 
     cap = cv2.VideoCapture(videofile)  # converts to RGB by default
-    cap.set(cv2.CAP_PROP_POS_FRAMES, filename)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, filename[0])
     _, frame = cap.read()
     cap.release()
 
@@ -545,7 +548,7 @@ def main(filename, debug: int, noplot: bool, saveplot: bool, videoList: List[str
         textbox = AnchoredText(text, frameon=True, loc=3, pad=0.5)
         ax.add_artist(textbox)
 
-    print(filename, dcount)
+    print(filename[0], dcount)
 
     if not noplot:
         if saveplot:
@@ -589,15 +592,15 @@ if __name__ == '__main__':
         print("Need image input!!")
         sys.exit()
 
-    videolist, framelist = readFileListIn(args.filelist)
-    videolist = iter(videolist)
+    framelist = readFileListIn(args.filelist)
+
     if args.ncores != 1:
         pool = Pool(args.ncores)
-        engine = Engine([args.debug, args.noplot, args.saveplot, videolist])
+        engine = Engine([args.debug, args.noplot, args.saveplot])
 
         results = pool.map(engine, framelist)
         pool.close()
         pool.join()
     else:
-        for frame in framelist:
-            main(frame, args.debug, args.noplot, args.saveplot, videolist)
+        for item in framelist:
+            main(item, args.debug, args.noplot, args.saveplot)
