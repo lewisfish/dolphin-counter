@@ -15,10 +15,11 @@ class StartWindow(QMainWindow):
         super().__init__()
 
         self.videoDir = Path(QFileDialog.getExistingDirectory(self, "Select Video Directory"))
+        self.videoFiles = list(self.videoDir.glob("**/*.mp4"))
 
         self.inputGenerator = generatorFile
         self.filename, self.currentFrameNumber, self.bbox = next(self.inputGenerator)
-        self.filename = self.videoDir / Path(self.filename)
+        self.filename = self.getFullFileName(self.filename)  # self.videoDir / Path(self.filename)
 
         # output is framenumber, bbox, class
         self.outFile = "labels.csv"
@@ -56,6 +57,12 @@ class StartWindow(QMainWindow):
         dialog = VideoPlayer(self.filename, self.currentFrameNumber, self)
         self.dialogs.append(dialog)
         self.dialogs[-1].show()
+
+    def getFullFileName(self, target):
+
+        for file in self.videoFiles:
+            if target in str(file):
+                return file
 
     def writeToFile(self, filename, content):
         '''Function write data to file
@@ -100,7 +107,7 @@ class StartWindow(QMainWindow):
         if newFile != self.filename:
             self.camera.close_camera()
             self.filename = newFile
-            self.filename = self.videoDir / Path(self.filename)
+            self.filename = self.getFullFileName(self.filename)  # self.videoDir / Path(self.filename)
             self.camera.initialize(self.filename)
 
     def update_image(self):
