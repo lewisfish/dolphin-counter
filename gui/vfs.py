@@ -1,4 +1,4 @@
-# Adapted from imutils
+# Adapted from imutils https://github.com/jrosebr1/imutils
 from queue import Queue
 import sys
 from threading import Thread

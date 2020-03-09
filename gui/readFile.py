@@ -1,11 +1,22 @@
 from pathlib import Path
 import sys
 
-import cv2
-
 
 def _iter_dict(videodict):
-    '''make dict into a generator yield the pertinent values and keys.
+    '''Make dict into a generator yield the pertinent values and keys.
+
+
+    Parameters
+    ----------
+
+    videodict: dictionary
+        Dictionary of information.
+
+    Returns
+    -------
+
+    Generator
+
     '''
 
     for key in videodict:
@@ -19,7 +30,21 @@ def _iter_dict(videodict):
             yield key, i, j
 
 
-def createDict(filename):
+def createDict(filename: str):
+    '''Function creates dictionary that contains all the frames, and
+       bounding boxes.
+
+    Parameters
+    ----------
+
+    filename : str or Path object
+
+    Returns
+    -------
+
+    generator that gives the videofilename, frame number, and bounding box
+
+    '''
 
     # if user has already labeled some objects check file and only get
     # unlabeled objects from file.
