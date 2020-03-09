@@ -84,13 +84,14 @@ def createDict(filename: str):
         videoFile = lineSplit[0]
         if videoFile not in mydict:
             mydict[videoFile] = {}
+        if len(lineSplit) == 1:
+            continue
+        frameNum = int(lineSplit[1].lstrip())
 
-        frameNum = int(lineSplit[1])
-
-        x0 = int(lineSplit[2][2:])
-        y0 = int(lineSplit[3])
-        x1 = int(lineSplit[4])
-        y1 = int(lineSplit[5][:-2])
+        x0 = int(lineSplit[2][2:].lstrip())
+        y0 = int(lineSplit[3].lstrip())
+        x1 = int(lineSplit[4].lstrip())
+        y1 = int(lineSplit[5][:-2].lstrip())
         coords = [[x0, y0], [x1, y1]]
         if boolFlag:
             if "time" not in mydict[videoFile]:
