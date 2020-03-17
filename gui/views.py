@@ -163,13 +163,15 @@ class VideoPlayer(QDialog):
     def __init__(self, filename, currentFrame, parent=None):
         super(VideoPlayer, self).__init__()
 
+        self.parent = parent
         self.fileName = filename
         self.originalFrame = currentFrame
         self.frameNumber = 0
-        self.videoLength = 50  # frames to loop over including orginal frame
+        # frames to loop over including orginal frame, really half video length
+        self.videoLength = int(100 / 2)
         self.setWindowTitle("Video Feed")
         self.timer = QTimer(self)
-        startFrame = self.originalFrame - int(self.videoLength/2)
+        startFrame = self.originalFrame - self.videoLength
 
         self.fvs = self.initVideo(startFrame, self.videoLength)
 
@@ -183,7 +185,7 @@ class VideoPlayer(QDialog):
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.image_view)
         self.setLayout(self.layout)
-        self.timer.start(40)
+        self.timer.start(80)
 
     def update(self, name, frame):
         '''Function updates file video stream with new file, init frame etc.
@@ -191,7 +193,8 @@ class VideoPlayer(QDialog):
 
         self.fileName = name
         self.originalFrame = frame
-        startFrame = max(self.originalFrame - int(self.videoLength/2), 1)
+        startFrame = max(self.originalFrame - self.videoLength, 1)
+
         self.fvs.stop()
         self.fvs.stream.release()
 
@@ -219,6 +222,14 @@ class VideoPlayer(QDialog):
         if not self.fvs.stopped:
             frame = self.fvs.read()
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            if self.fvs.currentNumber >= 40 and self.fvs.currentNumber <= 60:
+                x1 = self.parent.bbox[0][1] - 20
+                x2 = self.parent.bbox[1][1] + 20
+                y1 = self.parent.bbox[0][0] + 110  # due to cropping in anaylsis
+                y2 = self.parent.bbox[1][0] + 150
+
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (219, 209, 0), 2)
 
             frame = self.resize(frame, 1500)
 
