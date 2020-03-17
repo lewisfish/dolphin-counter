@@ -88,6 +88,9 @@
             </property>
            </spacer>
           </item>
+          <item>
+           <widget class="QTextEdit" name="textEdit"/>
+          </item>
          </layout>
         </item>
        </layout>
@@ -132,29 +135,15 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="sbirdAction">
+         <widget class="QPushButton" name="waterAction">
           <property name="text">
-           <string>&amp;Sitting bird</string>
+           <string>Water</string>
           </property>
           <property name="shortcut">
-           <string>S</string>
+           <string>V</string>
           </property>
          </widget>
         </item>
-        <item>
-         <widget class="QPushButton" name="otherAction">
-          <property name="text">
-           <string>&amp;Other/Unkown</string>
-          </property>
-          <property name="shortcut">
-           <string>O</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <widget class="QPushButton" name="whaleAction">
           <property name="text">
@@ -165,33 +154,44 @@
           </property>
          </widget>
         </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QPushButton" name="fbirdAction">
+         <widget class="QPushButton" name="unknownAction">
           <property name="text">
-           <string>Fl&amp;ying bird</string>
+           <string>&amp;Unkown</string>
+          </property>
+          <property name="shortcut">
+           <string>O</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="unknownnotcAction">
+          <property name="text">
+           <string>Unknown, not cetacean</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="trashAction">
+          <property name="text">
+           <string>&amp;Rubbish/Log</string>
+          </property>
+          <property name="shortcut">
+           <string>R</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="birdAction">
+          <property name="text">
+           <string>Bird</string>
           </property>
           <property name="shortcut">
            <string>Y</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="glareAction">
-          <property name="text">
-           <string>&amp;Glare</string>
-          </property>
-          <property name="shortcut">
-           <string>G</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="waveAction">
-          <property name="text">
-           <string>Wa&amp;ve</string>
-          </property>
-          <property name="shortcut">
-           <string>V</string>
           </property>
          </widget>
         </item>
@@ -200,39 +200,15 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QPushButton" name="fishAction">
+         <widget class="QPushButton" name="boatAction">
           <property name="text">
-           <string>Fis&amp;h</string>
+           <string>&amp;Boat</string>
           </property>
           <property name="shortcut">
-           <string>H</string>
+           <string>B</string>
           </property>
          </widget>
         </item>
-        <item>
-         <widget class="QPushButton" name="logAction">
-          <property name="text">
-           <string>&amp;Log</string>
-          </property>
-          <property name="shortcut">
-           <string>L</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="wcrestAction">
-          <property name="text">
-           <string>White&amp;Crest</string>
-          </property>
-          <property name="shortcut">
-           <string>C</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
          <widget class="QPushButton" name="turtleAction">
           <property name="text">
@@ -244,22 +220,12 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="trashAction">
+         <widget class="QPushButton" name="fishAction">
           <property name="text">
-           <string>&amp;Rubbish</string>
+           <string>Fis&amp;h</string>
           </property>
           <property name="shortcut">
-           <string>R</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="boatAction">
-          <property name="text">
-           <string>&amp;Boat</string>
-          </property>
-          <property name="shortcut">
-           <string>B</string>
+           <string>H</string>
           </property>
          </widget>
         </item>

@@ -39,19 +39,18 @@ class StartWindow(QMainWindow):
 
         # get button presses and send appropriate class to function
         self.dolphinAction.clicked.connect(lambda ch, i=0: self.saveLabelgetNextImage(i))
-        self.whaleAction.clicked.connect(lambda ch, i=1: self.saveLabelgetNextImage(i))
-        self.fishAction.clicked.connect(lambda ch, i=2: self.saveLabelgetNextImage(i))
-        self.turtleAction.clicked.connect(lambda ch, i=3: self.saveLabelgetNextImage(i))
-        self.sbirdAction.clicked.connect(lambda ch, i=4: self.saveLabelgetNextImage(i))
-        self.fbirdAction.clicked.connect(lambda ch, i=5: self.saveLabelgetNextImage(i))
-        self.logAction.clicked.connect(lambda ch, i=6: self.saveLabelgetNextImage(i))
-        self.trashAction.clicked.connect(lambda ch, i=7: self.saveLabelgetNextImage(i))
-        self.waveAction.clicked.connect(lambda ch, i=8: self.saveLabelgetNextImage(i))
-        self.wcrestAction.clicked.connect(lambda ch, i=9: self.saveLabelgetNextImage(i))
-        self.boatAction.clicked.connect(lambda ch, i=10: self.saveLabelgetNextImage(i))
-        self.glareAction.clicked.connect(lambda ch, i=11: self.saveLabelgetNextImage(i))
-        self.multiDolphinAction.clicked.connect(lambda ch, i=12: self.saveLabelgetNextImage(i))
-        self.otherAction.clicked.connect(lambda ch, i=13: self.saveLabelgetNextImage(i))
+        self.birdAction.clicked.connect(lambda ch, i=1: self.saveLabelgetNextImage(i))
+        self.multiDolphinAction.clicked.connect(lambda ch, i=2: self.saveLabelgetNextImage(i))
+        self.whaleAction.clicked.connect(lambda ch, i=3: self.saveLabelgetNextImage(i))
+        self.turtleAction.clicked.connect(lambda ch, i=4: self.saveLabelgetNextImage(i))
+        self.unknownAction.clicked.connect(lambda ch, i=5: self.saveLabelgetNextImage(i))
+        self.unknownnotcAction.clicked.connect(lambda ch, i=6: self.saveLabelgetNextImage(i))
+        self.boatAction.clicked.connect(lambda ch, i=7: self.saveLabelgetNextImage(i))
+        self.fishAction.clicked.connect(lambda ch, i=8: self.saveLabelgetNextImage(i))
+        self.trashAction.clicked.connect(lambda ch, i=9: self.saveLabelgetNextImage(i))
+        self.waterAction.clicked.connect(lambda ch, i=10: self.saveLabelgetNextImage(i))
+
+        self.textEdit.setPlaceholderText("Comments")
 
         # show video stream dialog
         dialog = VideoPlayer(self.filename, self.currentFrameNumber, self)
@@ -86,7 +85,9 @@ class StartWindow(QMainWindow):
         '''If dolphin button clicked records object as a dolphin'''
 
         # write out label
-        self.writeToFile(self.outFile, f"{self.filename}, {self.currentFrameNumber}, {self.bbox[0][0]}, {self.bbox[0][1]}, {self.bbox[1][0]}, {self.bbox[1][1]}, {item}")
+        comment = self.textEdit.toPlainText()
+        self.textEdit.clear()
+        self.writeToFile(self.outFile, f"{self.filename}, {self.currentFrameNumber}, {self.bbox[0][0]}, {self.bbox[0][1]}, {self.bbox[1][0]}, {self.bbox[1][1]}, {item}, {comment}")
 
         self.get_next_image_data()
 
