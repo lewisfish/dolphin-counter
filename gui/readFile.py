@@ -26,8 +26,9 @@ def _iter_dict(videodict):
             print("No more objects to be analysed!!!")
             sys.exit()
         bboxs = videodict[key]["bbox"]
-        for i, j in zip(frames, bboxs):
-            yield key, i, j
+        lengths = videodict[key]["length"]
+        for i, j, k in zip(frames, bboxs, lengths):
+            yield key, i, j, k
 
 
 def createDict(filename: str):
@@ -79,7 +80,7 @@ def createDict(filename: str):
 
     for line in lines:
         # get video filename
-        # store framenumber and bbox in a dict
+        # store framenumber, bbox, dolphin length in a dict
         lineSplit = line.split(",")
         videoFile = lineSplit[0]
         if videoFile not in mydict:
@@ -91,15 +92,18 @@ def createDict(filename: str):
         x0 = int(lineSplit[2][2:].lstrip())
         y0 = int(lineSplit[3].lstrip())
         x1 = int(lineSplit[4].lstrip())
-        y1 = int(lineSplit[5][:-2].lstrip())
+        y1 = int(lineSplit[5].lstrip().rstrip()[:-1])
         coords = [[x0, y0], [x1, y1]]
+        dolphinLength = float(lineSplit[-1])
         if boolFlag:
             if "time" not in mydict[videoFile]:
                 mydict[videoFile]["time"] = []
                 mydict[videoFile]["bbox"] = []
+                mydict[videoFile]["length"] = []
 
             mydict[videoFile]["time"].append(frameNum)
             mydict[videoFile]["bbox"].append(coords)
+            mydict[videoFile]["length"].append(dolphinLength)
 
         if coords == lastCoords and frameNum == lastFrameNum and str(lastVideo) == videoFile:
             boolFlag = True

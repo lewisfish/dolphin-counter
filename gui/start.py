@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QApplication
 from views import StartWindow
 from readFile import createDict
 
-file = "final-output.dat"
+file = "final-output-dlength.dat"
 genVals = createDict(file)
 
 app = QApplication(["Object labeler"])

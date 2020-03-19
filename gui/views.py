@@ -18,7 +18,7 @@ class StartWindow(QMainWindow):
         self.videoFiles = list(self.videoDir.glob("**/*.mp4"))
 
         self.inputGenerator = generatorFile
-        self.filename, self.currentFrameNumber, self.bbox = next(self.inputGenerator)
+        self.filename, self.currentFrameNumber, self.bbox, self.dLength = next(self.inputGenerator)
         self.filename = self.getFullFileName(self.filename)  # self.videoDir / Path(self.filename)
 
         # output is framenumber, bbox, class
@@ -101,7 +101,7 @@ class StartWindow(QMainWindow):
            Checks if source has changed'''
 
         try:
-            newFile, self.currentFrameNumber, self.bbox = next(self.inputGenerator)
+            newFile, self.currentFrameNumber, self.bbox, self.dLength = next(self.inputGenerator)
         except StopIteration:
             newFile = ""
 
@@ -138,7 +138,11 @@ class StartWindow(QMainWindow):
             self.insetImage.setPixmap(insetPixmap)
 
             # check if green rect is in inset
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (254, 97, 0), 2)
+            # draw scale bar
+            pt1 = (50, height - 50)
+            pt2 = (50 + int(self.dLength), height - 50)
+            cv2.line(frame, pt1, pt2, (254, 97, 0), 2)
         else:
             # Show "done!!" if no images left
             frame = cv2.putText(frame, 'Done!!', (750, 380), cv2.FONT_HERSHEY_SIMPLEX,
@@ -222,6 +226,12 @@ class VideoPlayer(QDialog):
         if not self.fvs.stopped:
             frame = self.fvs.read()
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # draw scale bar
+            height, _, _1 = frame.shape
+
+            pt1 = (50, height - 50)
+            pt2 = (50 + int(self.parent.dLength), height - 50)
+            cv2.line(frame, pt1, pt2, (254, 97, 0), 2)
 
             if self.fvs.currentNumber >= 40 and self.fvs.currentNumber <= 60:
                 x1 = self.parent.bbox[0][1] - 20
@@ -229,7 +239,7 @@ class VideoPlayer(QDialog):
                 y1 = self.parent.bbox[0][0] + 110  # due to cropping in anaylsis
                 y2 = self.parent.bbox[1][0] + 150
 
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (219, 209, 0), 2)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (254, 97, 0), 2)
 
             frame = self.resize(frame, 1500)
 
