@@ -31,6 +31,8 @@ class StartWindow(QMainWindow):
 
         # LoadUi designed with QtCreator
         mainWindow = uic.loadUi("gui/mainwindow.ui", self)
+        uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
+        self.label.setText(uniqueID)
 
         # Auto scale image when window resized
         self.imageAction.setScaledContents(True)
@@ -110,6 +112,9 @@ class StartWindow(QMainWindow):
             self.filename = newFile
             self.filename = self.getFullFileName(self.filename)  # self.videoDir / Path(self.filename)
             self.camera.initialize(self.filename)
+
+        uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
+        self.label.setText(uniqueID)
 
     def update_image(self):
         '''Updates displayed image and shows ROI as an inset.'''
