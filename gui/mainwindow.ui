@@ -158,12 +158,12 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="whaleAction">
+         <widget class="QPushButton" name="trashAction">
           <property name="text">
-           <string>&amp;Whale</string>
+           <string>&amp;Rubbish/Log</string>
           </property>
           <property name="shortcut">
-           <string>W</string>
+           <string>R</string>
           </property>
          </widget>
         </item>
@@ -189,22 +189,22 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="trashAction">
-          <property name="text">
-           <string>&amp;Rubbish/Log</string>
-          </property>
-          <property name="shortcut">
-           <string>R</string>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QPushButton" name="birdAction">
           <property name="text">
            <string>Bird</string>
           </property>
           <property name="shortcut">
            <string>Y</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="whaleAction">
+          <property name="text">
+           <string>&amp;Whale</string>
+          </property>
+          <property name="shortcut">
+           <string>W</string>
           </property>
          </widget>
         </item>
