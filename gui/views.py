@@ -33,6 +33,7 @@ class StartWindow(QMainWindow):
         mainWindow = uic.loadUi("gui/mainwindow.ui", self)
         uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
         self.label.setText(uniqueID)
+        self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         # Auto scale image when window resized
         self.imageAction.setScaledContents(True)
