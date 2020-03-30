@@ -291,8 +291,95 @@
      <height>22</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuMenu">
+    <property name="title">
+     <string>Menu</string>
+    </property>
+    <widget class="QMenu" name="menuVideo_Speed">
+     <property name="title">
+      <string>Video Speed</string>
+     </property>
+     <addaction name="MenuSpeed0_5"/>
+     <addaction name="MenuSpeed1_0"/>
+     <addaction name="MenuSpeed2_0"/>
+    </widget>
+    <widget class="QMenu" name="menuVideo_Length">
+     <property name="title">
+      <string>Video Length</string>
+     </property>
+     <addaction name="MenuLength50"/>
+     <addaction name="MenuLength100"/>
+     <addaction name="MenuLength150"/>
+     <addaction name="MenuLength200"/>
+    </widget>
+    <addaction name="menuVideo_Speed"/>
+    <addaction name="menuVideo_Length"/>
+   </widget>
+   <addaction name="menuMenu"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <action name="MenuSpeed1_0">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>1.0x</string>
+   </property>
+  </action>
+  <action name="MenuSpeed2_0">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>2.0x</string>
+   </property>
+  </action>
+  <action name="MenuSpeed0_5">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>0.5x</string>
+   </property>
+  </action>
+  <action name="MenuLength100">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>100</string>
+   </property>
+  </action>
+  <action name="MenuLength50">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>50</string>
+   </property>
+  </action>
+  <action name="MenuLength200">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>200</string>
+   </property>
+  </action>
+  <action name="MenuLength150">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>150</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

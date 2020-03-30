@@ -4,7 +4,7 @@ import cv2
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QVBoxLayout, QDialog, QFileDialog
+from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QVBoxLayout, QDialog, QFileDialog, QActionGroup
 
 from models import Camera
 from vfs import FileVideoStream
@@ -54,10 +54,57 @@ class StartWindow(QMainWindow):
 
         self.textEdit.setPlaceholderText("Comments")
 
+        self.speedGroup = QActionGroup(self)
+        self.speedGroup.addAction(self.MenuSpeed1_0)
+        self.speedGroup.addAction(self.MenuSpeed0_5)
+        self.speedGroup.addAction(self.MenuSpeed2_0)
+        self.speedGroup.setExclusive(True)
+
+        self.lengthGroup = QActionGroup(self)
+        self.lengthGroup.addAction(self.MenuLength50)
+        self.lengthGroup.addAction(self.MenuLength100)
+        self.lengthGroup.addAction(self.MenuLength150)
+        self.lengthGroup.addAction(self.MenuLength200)
+        self.lengthGroup.setExclusive(True)
+
+        self.speedGroup.triggered.connect(self.buttonSpeedState)
+        self.lengthGroup.triggered.connect(self.buttonLengthState)
+
         # show video stream dialog
         dialog = VideoPlayer(self.filename, self.currentFrameNumber, self)
         self.dialogs.append(dialog)
         self.dialogs[-1].show()
+
+    def buttonSpeedState(self, button):
+
+        if button.text() == "1.0x":
+            self.dialogs[-1].timer.setInterval(40)
+        elif button.text() == "2.0x":
+            self.dialogs[-1].timer.setInterval(20)
+        elif button.text() == "0.5x":
+            self.dialogs[-1].timer.setInterval(80)
+
+    def buttonLengthState(self, button):
+
+        if button.text() == "50":
+            self.dialogs[-1].videoLength = 25
+            self.dialogs[-1].fvs.videoLength = 25
+            self.dialogs[-1].update(self.filename, self.currentFrameNumber)
+
+        elif button.text() == "100":
+            self.dialogs[-1].videoLength = 50
+            self.dialogs[-1].fvs.videoLength = 50
+            self.dialogs[-1].update(self.filename, self.currentFrameNumber)
+
+        elif button.text() == "150":
+            self.dialogs[-1].videoLength = 75
+            self.dialogs[-1].fvs.videoLength = 75
+            self.dialogs[-1].update(self.filename, self.currentFrameNumber)
+
+        elif button.text() == "200":
+            self.dialogs[-1].videoLength = 100
+            self.dialogs[-1].fvs.videoLength = 100
+            self.dialogs[-1].update(self.filename, self.currentFrameNumber)
 
     def getFullFileName(self, target):
 
@@ -147,7 +194,7 @@ class StartWindow(QMainWindow):
             # draw scale bar
             pt1 = (50, height - 50)
             pt2 = (50 + int(self.dLength), height - 50)
-            cv2.line(frame, pt1, pt2, (254, 97, 0), 2)
+            cv2.line(frame, pt1, pt2, (0, 0, 0), 2)
         else:
             # Show "done!!" if no images left
             frame = cv2.putText(frame, 'Done!!', (750, 380), cv2.FONT_HERSHEY_SIMPLEX,
@@ -194,7 +241,8 @@ class VideoPlayer(QDialog):
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.image_view)
         self.setLayout(self.layout)
-        self.timer.start(80)
+        # video speed ~ fps
+        self.timer.start(40)  # real time
 
     def update(self, name, frame):
         '''Function updates file video stream with new file, init frame etc.
@@ -214,7 +262,7 @@ class VideoPlayer(QDialog):
         ''' Get FileVideoStream object
         '''
 
-        return FileVideoStream(self.fileName, start, length).start()
+        return FileVideoStream(self.fileName, start, length*2, length*2).start()
 
     def resize(self, image, width):
         '''Function that resize an image and keeps image ratio.
@@ -236,7 +284,7 @@ class VideoPlayer(QDialog):
 
             pt1 = (50, height - 50)
             pt2 = (50 + int(self.parent.dLength), height - 50)
-            cv2.line(frame, pt1, pt2, (254, 97, 0), 2)
+            cv2.line(frame, pt1, pt2, (0, 0, 0), 2)
 
             if self.fvs.currentNumber >= 40 and self.fvs.currentNumber <= 60:
                 x1 = self.parent.bbox[0][1] - 20
