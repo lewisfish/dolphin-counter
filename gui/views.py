@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import cv2
@@ -20,6 +21,11 @@ class StartWindow(QMainWindow):
         self.inputGenerator = generatorFile
         self.filename, self.currentFrameNumber, self.bbox, self.dLength = next(self.inputGenerator)
         self.filename = self.getFullFileName(self.filename)  # self.videoDir / Path(self.filename)
+
+        self.prevFilename = self.filename
+        self.prevFrameNumber = self.currentFrameNumber
+        self.prevBbox = self.bbox
+        self.prevDlength = self.dLength
 
         # output is framenumber, bbox, class
         self.outFile = "labels.csv"
@@ -55,6 +61,7 @@ class StartWindow(QMainWindow):
 
         self.textEdit.setPlaceholderText("Comments")
 
+        # Menu actions
         self.speedGroup = QActionGroup(self)
         self.speedGroup.addAction(self.MenuSpeed1_0)
         self.speedGroup.addAction(self.MenuSpeed0_5)
@@ -71,10 +78,45 @@ class StartWindow(QMainWindow):
         self.speedGroup.triggered.connect(self.buttonSpeedState)
         self.lengthGroup.triggered.connect(self.buttonLengthState)
 
+        # other button
+        self.backAction.clicked.connect(self.getPreviousObject)
+
         # show video stream dialog
         dialog = VideoPlayer(self.filename, self.currentFrameNumber, self)
         self.dialogs.append(dialog)
         self.dialogs[-1].show()
+
+    def getPreviousObject(self):
+
+        self.removeLastLine(self.outFile)
+
+        if self.prevFilename != self.filename:
+            self.camera.close_camera()
+            self.filename = self.prevFilename
+            self.camera.initialize(self.filename)
+        else:
+            self.filename = self.prevFilename
+
+        self.currentFrameNumber = self.prevFrameNumber
+        self.bbox = self.prevBbox
+        self.dLength = self.prevDlength
+        uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
+        self.label.setText(uniqueID)
+
+        self.update_image()
+
+    def removeLastLine(self, filename):
+        with open(filename, "rb+") as file:
+            file.seek(0, os.SEEK_END)
+            pos = file.tell() - 1
+
+            while pos > 0 and file.read(1) != b"\n":
+                pos -= 1
+                file.seek(pos, os.SEEK_SET)
+
+            if pos > 0:
+                file.seek(pos, os.SEEK_SET)
+                file.truncate()
 
     def buttonSpeedState(self, button):
 
@@ -232,7 +274,7 @@ class VideoPlayer(QDialog):
 
         self.fvs = self.initVideo(startFrame, self.videoLength)
 
-        self.timer.timeout.connect(self.update_image)
+        self.timer.timeout.connect(self.update_video)
 
         # set up UI
         self.image_view = QLabel(self)
@@ -275,7 +317,7 @@ class VideoPlayer(QDialog):
 
         return cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
 
-    def update_image(self):
+    def update_video(self):
 
         if not self.fvs.stopped:
             frame = self.fvs.read()
