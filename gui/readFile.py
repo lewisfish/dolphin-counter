@@ -49,25 +49,24 @@ def createDict(filename: str):
 
     # if user has already labeled some objects check file and only get
     # unlabeled objects from file.
+    lastFrameNum, lastCoords = None, None
     labelPath = Path("labels.csv")
     if labelPath.exists():
         labelFile = open(labelPath, "r", encoding="utf-8")
         labelLines = labelFile.readlines()
         if len(labelLines) > 0:
             lastLine = labelLines[-1]
-            lineSplit = lastLine.split(",")
-            lastVideo = Path(lineSplit[0]).name
-            lastFrameNum = int(lineSplit[1])
+            if lastLine[0] != "#" and len(lastLine) >= 2:
 
-            x0 = int(lineSplit[2])
-            y0 = int(lineSplit[3])
-            x1 = int(lineSplit[4])
-            y1 = int(lineSplit[5])
-            lastCoords = [[x0, y0], [x1, y1]]
-        else:
-            lastFrameNum, lastCoords = None, None
-    else:
-        lastFrameNum, lastCoords = None, None
+                lineSplit = lastLine.split(",")
+                lastVideo = Path(lineSplit[0]).name
+                lastFrameNum = int(lineSplit[1])
+
+                x0 = int(lineSplit[2])
+                y0 = int(lineSplit[3])
+                x1 = int(lineSplit[4])
+                y1 = int(lineSplit[5])
+                lastCoords = [[x0, y0], [x1, y1]]
 
     f = open(filename, "r", encoding="utf-8")
     lines = f.readlines()

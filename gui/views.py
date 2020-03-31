@@ -111,19 +111,25 @@ class StartWindow(QMainWindow):
 
     def removeLastLine(self, filename):
         '''Remove last line from a given file. This should be a multiplatform
-           memory friendly solution'''
+           memory friendly solution: https://superuser.com/a/127821'''
 
-        with open(filename, "rb+") as file:
+        count = 0
+        number = 1 # lines to delete
+        with open(filename, "r+b", buffering=0) as file:
             file.seek(0, os.SEEK_END)
-            pos = file.tell() - 1
+            end = file.tell()
 
-            while pos > 0 and file.read(1) != b"\n":
-                pos -= 1
-                file.seek(pos, os.SEEK_SET)
-
-            if pos > 0:
-                file.seek(pos, os.SEEK_SET)
-                file.truncate()
+            while file.tell() > 0:
+                file.seek(-1, os.SEEK_CUR)
+                char = file.read(1)
+                if char != b'\n' and file.tell() == end:
+                    break
+                if char == b'\n':
+                    count += 1
+                if count == number + 1:
+                    file.truncate()
+                    break
+                file.seek(-1, os.SEEK_CUR)
 
     def buttonSpeedState(self, button):
         '''If a speed menu action is taken, then change the
@@ -181,9 +187,17 @@ class StartWindow(QMainWindow):
         None
 
         '''
+        
+        try:
+            with open(filename, "r", encoding="utf-8") as myfile:
+                text = myfile.read()
+        except FileNotFoundError:
+            text = "\n"
 
         with open(filename, "a", encoding="utf-8") as myfile:
-            myfile.write("\n" + content)
+            if not text.endswith("\n"):
+                myfile.write("\n")
+            myfile.write(content + "\n")
 
     def saveLabelgetNextImage(self, item):
         '''If dolphin button clicked records object as a dolphin'''
