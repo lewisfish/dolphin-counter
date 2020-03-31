@@ -272,7 +272,7 @@ class VideoPlayer(QDialog):
         self.fileName = filename
         self.originalFrame = currentFrame
         self.frameNumber = 0
-        # frames to loop over including orginal frame, really half video length
+        # frames to loop over including original frame, really half video length
         self.videoLength = int(100 / 2)
         self.setWindowTitle("Video Feed")
         self.timer = QTimer(self)
@@ -335,7 +335,10 @@ class VideoPlayer(QDialog):
             pt2 = (50 + int(self.parent.dLength), height - 50)
             cv2.line(frame, pt1, pt2, (0, 0, 0), 2)
 
-            if self.fvs.currentNumber >= 40 and self.fvs.currentNumber <= 60:
+            minFrameRectShow = self.videoLength - 10
+            maxFrameRectShow = self.videoLength + 10
+
+            if self.fvs.currentNumber >= minFrameRectShow and self.fvs.currentNumber <= maxFrameRectShow:
                 x1 = self.parent.bbox[0][1] - 20
                 x2 = self.parent.bbox[1][1] + 20
                 y1 = self.parent.bbox[0][0] + 110  # due to cropping in anaylsis
