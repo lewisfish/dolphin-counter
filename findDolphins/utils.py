@@ -4,7 +4,22 @@ import matplotlib.pyplot as plt
 __all__ = ["readFileListIn", "make_random_cmap", "supressAxs", "debug_fig"]
 
 
-def readFileListIn(filename):
+def readFileListIn(filename: str):
+    '''Function that reads in given file and returns videofilename, and
+       framenumber.
+
+    Parameters
+    ----------
+
+    filename : str or Path object
+        Filename of the file to read in
+
+    Returns
+    -------
+
+    videoFrameList : List[]
+    '''
+
     videoFrameList = []
     with open(filename, "r") as f:
         lines = f.readlines()

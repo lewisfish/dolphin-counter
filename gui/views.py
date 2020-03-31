@@ -87,6 +87,7 @@ class StartWindow(QMainWindow):
         self.dialogs[-1].show()
 
     def getPreviousObject(self):
+        '''Get previous frame, display it and remove last label from file'''
 
         self.removeLastLine(self.outFile)
 
@@ -106,6 +107,9 @@ class StartWindow(QMainWindow):
         self.update_image()
 
     def removeLastLine(self, filename):
+        '''Remove last line from a given file. This should be a multiplatform
+           memory friendly solution'''
+
         with open(filename, "rb+") as file:
             file.seek(0, os.SEEK_END)
             pos = file.tell() - 1
@@ -119,6 +123,8 @@ class StartWindow(QMainWindow):
                 file.truncate()
 
     def buttonSpeedState(self, button):
+        '''If a speed menu action is taken, then change the
+           timer interval in the video player'''
 
         if button.text() == "1.0x":
             self.dialogs[-1].timer.setInterval(40)
@@ -128,6 +134,8 @@ class StartWindow(QMainWindow):
             self.dialogs[-1].timer.setInterval(80)
 
     def buttonLengthState(self, button):
+        '''If a video length menu action is taken, then change the
+           video length in the video player'''
 
         if button.text() == "50":
             self.dialogs[-1].videoLength = 25
@@ -150,6 +158,7 @@ class StartWindow(QMainWindow):
             self.dialogs[-1].update(self.filename, self.currentFrameNumber)
 
     def getFullFileName(self, target):
+        '''Get the full filename path'''
 
         for file in self.videoFiles:
             if target in str(file):
