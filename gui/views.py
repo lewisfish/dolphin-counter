@@ -38,6 +38,7 @@ class StartWindow(QMainWindow):
         # LoadUi designed with QtCreator
         mainWindow = uic.loadUi("gui/mainwindow.ui", self)
         uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
+        uniqueID += " " + str(self.bbox)
         self.label.setText(uniqueID)
         self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
@@ -102,6 +103,7 @@ class StartWindow(QMainWindow):
         self.bbox = self.prevBbox
         self.dLength = self.prevDlength
         uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
+        uniqueID += " " + str(self.bbox)
         self.label.setText(uniqueID)
 
         self.update_image()
@@ -213,6 +215,7 @@ class StartWindow(QMainWindow):
             self.camera.initialize(self.filename)
 
         uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
+        uniqueID += " " + str(self.bbox)
         self.label.setText(uniqueID)
 
     def update_image(self):
