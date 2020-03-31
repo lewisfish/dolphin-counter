@@ -218,10 +218,7 @@ class StartWindow(QMainWindow):
             y1 = self.bbox[0][0] + 130  # due to cropping in anaylsis
             y2 = self.bbox[1][0] + 130
 
-            hdiff = int((y2 - y1) / 2)
-            wdiff = int((x2 - x1) / 2)
-
-            inset = frame[y1-hdiff:y2+hdiff, x1-wdiff:x2+wdiff].copy()
+            inset = frame[y1:y2, x1:x2].copy()
             insetHeight, insetWidth, channel = inset.shape
             bytesPerLine = 3 * insetWidth
 
