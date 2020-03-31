@@ -51,7 +51,7 @@ def createDict(filename: str):
     # unlabeled objects from file.
     labelPath = Path("labels.csv")
     if labelPath.exists():
-        labelFile = open(labelPath, "r")
+        labelFile = open(labelPath, "r", encoding="utf-8")
         labelLines = labelFile.readlines()
         if len(labelLines) > 0:
             lastLine = labelLines[-1]
@@ -69,7 +69,7 @@ def createDict(filename: str):
     else:
         lastFrameNum, lastCoords = None, None
 
-    f = open(filename, "r")
+    f = open(filename, "r", encoding="utf-8")
     lines = f.readlines()
     mydict = {}
 

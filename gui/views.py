@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from pathlib import Path
 
 import cv2
@@ -80,7 +81,7 @@ class StartWindow(QMainWindow):
 
         '''
 
-        with open(filename, "a") as myfile:
+        with open(filename, "a", encoding="utf-8") as myfile:
             myfile.write("\n" + content)
 
     def saveLabelgetNextImage(self, item):
