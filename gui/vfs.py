@@ -54,8 +54,8 @@ class FileVideoStream:
                 # add the frame to the queue
                 self.Q.put(frame)
                 self.currentNumber += 1
-                # print(self.currentNumber)
-                if self.currentNumber == self.videoLength:
+
+                if self.currentNumber >= self.videoLength:
                     self.stream.set(cv2.CAP_PROP_POS_FRAMES, self.startFrame)
                     self.currentNumber = 0
 

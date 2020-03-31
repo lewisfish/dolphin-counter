@@ -38,13 +38,19 @@ class Engine(object):
 
 
 def redRatio(image: np.ndarray) -> np.ndarray:
-    '''
+    '''Get the red ration of the image
 
     Parameters
     ----------
 
+    image : np.ndarray
+        The image to get the red ratio of.
+
     Returns
     -------
+
+    ratio : np.ndarray
+        The red ration of the input image
 
     '''
 

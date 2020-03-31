@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+import os
 from pathlib import Path
 
 import cv2
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QVBoxLayout, QDialog, QFileDialog
+from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QVBoxLayout, QDialog, QFileDialog, QActionGroup
 
 from models import Camera
 from vfs import FileVideoStream
@@ -22,6 +23,11 @@ class StartWindow(QMainWindow):
         self.filename, self.currentFrameNumber, self.bbox, self.dLength = next(self.inputGenerator)
         self.filename = self.getFullFileName(self.filename)  # self.videoDir / Path(self.filename)
 
+        self.prevFilename = self.filename
+        self.prevFrameNumber = self.currentFrameNumber
+        self.prevBbox = self.bbox
+        self.prevDlength = self.dLength
+
         # output is framenumber, bbox, class
         self.outFile = "labels.csv"
         self.dialogs = list()
@@ -33,7 +39,9 @@ class StartWindow(QMainWindow):
         # LoadUi designed with QtCreator
         mainWindow = uic.loadUi("gui/mainwindow.ui", self)
         uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
+        uniqueID += " " + str(self.bbox)
         self.label.setText(uniqueID)
+        self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         # Auto scale image when window resized
         self.imageAction.setScaledContents(True)
@@ -55,12 +63,105 @@ class StartWindow(QMainWindow):
 
         self.textEdit.setPlaceholderText("Comments")
 
+        # Menu actions
+        self.speedGroup = QActionGroup(self)
+        self.speedGroup.addAction(self.MenuSpeed1_0)
+        self.speedGroup.addAction(self.MenuSpeed0_5)
+        self.speedGroup.addAction(self.MenuSpeed2_0)
+        self.speedGroup.setExclusive(True)
+
+        self.lengthGroup = QActionGroup(self)
+        self.lengthGroup.addAction(self.MenuLength50)
+        self.lengthGroup.addAction(self.MenuLength100)
+        self.lengthGroup.addAction(self.MenuLength150)
+        self.lengthGroup.addAction(self.MenuLength200)
+        self.lengthGroup.setExclusive(True)
+
+        self.speedGroup.triggered.connect(self.buttonSpeedState)
+        self.lengthGroup.triggered.connect(self.buttonLengthState)
+
+        # other button
+        self.backAction.clicked.connect(self.getPreviousObject)
+
         # show video stream dialog
         dialog = VideoPlayer(self.filename, self.currentFrameNumber, self)
         self.dialogs.append(dialog)
         self.dialogs[-1].show()
 
+    def getPreviousObject(self):
+        '''Get previous frame, display it and remove last label from file'''
+
+        self.removeLastLine(self.outFile)
+
+        if self.prevFilename != self.filename:
+            self.camera.close_camera()
+            self.filename = self.prevFilename
+            self.camera.initialize(self.filename)
+        else:
+            self.filename = self.prevFilename
+
+        self.currentFrameNumber = self.prevFrameNumber
+        self.bbox = self.prevBbox
+        self.dLength = self.prevDlength
+        uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
+        uniqueID += " " + str(self.bbox)
+        self.label.setText(uniqueID)
+
+        self.update_image()
+
+    def removeLastLine(self, filename):
+        '''Remove last line from a given file. This should be a multiplatform
+           memory friendly solution'''
+
+        with open(filename, "rb+") as file:
+            file.seek(0, os.SEEK_END)
+            pos = file.tell() - 1
+
+            while pos > 0 and file.read(1) != b"\n":
+                pos -= 1
+                file.seek(pos, os.SEEK_SET)
+
+            if pos > 0:
+                file.seek(pos, os.SEEK_SET)
+                file.truncate()
+
+    def buttonSpeedState(self, button):
+        '''If a speed menu action is taken, then change the
+           timer interval in the video player'''
+
+        if button.text() == "1.0x":
+            self.dialogs[-1].timer.setInterval(40)
+        elif button.text() == "2.0x":
+            self.dialogs[-1].timer.setInterval(20)
+        elif button.text() == "0.5x":
+            self.dialogs[-1].timer.setInterval(80)
+
+    def buttonLengthState(self, button):
+        '''If a video length menu action is taken, then change the
+           video length in the video player'''
+
+        if button.text() == "50":
+            self.dialogs[-1].videoLength = 25
+            self.dialogs[-1].fvs.videoLength = 25
+            self.dialogs[-1].update(self.filename, self.currentFrameNumber)
+
+        elif button.text() == "100":
+            self.dialogs[-1].videoLength = 50
+            self.dialogs[-1].fvs.videoLength = 50
+            self.dialogs[-1].update(self.filename, self.currentFrameNumber)
+
+        elif button.text() == "150":
+            self.dialogs[-1].videoLength = 75
+            self.dialogs[-1].fvs.videoLength = 75
+            self.dialogs[-1].update(self.filename, self.currentFrameNumber)
+
+        elif button.text() == "200":
+            self.dialogs[-1].videoLength = 100
+            self.dialogs[-1].fvs.videoLength = 100
+            self.dialogs[-1].update(self.filename, self.currentFrameNumber)
+
     def getFullFileName(self, target):
+        '''Get the full filename path'''
 
         for file in self.videoFiles:
             if target in str(file):
@@ -115,6 +216,7 @@ class StartWindow(QMainWindow):
             self.camera.initialize(self.filename)
 
         uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
+        uniqueID += " " + str(self.bbox)
         self.label.setText(uniqueID)
 
     def update_image(self):
@@ -129,10 +231,7 @@ class StartWindow(QMainWindow):
             y1 = self.bbox[0][0] + 130  # due to cropping in anaylsis
             y2 = self.bbox[1][0] + 130
 
-            hdiff = int((y2 - y1) / 2)
-            wdiff = int((x2 - x1) / 2)
-
-            inset = frame[y1-hdiff:y2+hdiff, x1-wdiff:x2+wdiff].copy()
+            inset = frame[y1:y2, x1:x2].copy()
             insetHeight, insetWidth, channel = inset.shape
             bytesPerLine = 3 * insetWidth
 
@@ -148,7 +247,7 @@ class StartWindow(QMainWindow):
             # draw scale bar
             pt1 = (50, height - 50)
             pt2 = (50 + int(self.dLength), height - 50)
-            cv2.line(frame, pt1, pt2, (254, 97, 0), 2)
+            cv2.line(frame, pt1, pt2, (0, 0, 0), 2)
         else:
             # Show "done!!" if no images left
             frame = cv2.putText(frame, 'Done!!', (750, 380), cv2.FONT_HERSHEY_SIMPLEX,
@@ -177,7 +276,7 @@ class VideoPlayer(QDialog):
         self.fileName = filename
         self.originalFrame = currentFrame
         self.frameNumber = 0
-        # frames to loop over including orginal frame, really half video length
+        # frames to loop over including original frame, really half video length
         self.videoLength = int(100 / 2)
         self.setWindowTitle("Video Feed")
         self.timer = QTimer(self)
@@ -185,7 +284,7 @@ class VideoPlayer(QDialog):
 
         self.fvs = self.initVideo(startFrame, self.videoLength)
 
-        self.timer.timeout.connect(self.update_image)
+        self.timer.timeout.connect(self.update_video)
 
         # set up UI
         self.image_view = QLabel(self)
@@ -195,7 +294,8 @@ class VideoPlayer(QDialog):
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.image_view)
         self.setLayout(self.layout)
-        self.timer.start(80)
+        # video speed ~ fps
+        self.timer.start(40)  # real time
 
     def update(self, name, frame):
         '''Function updates file video stream with new file, init frame etc.
@@ -215,7 +315,7 @@ class VideoPlayer(QDialog):
         ''' Get FileVideoStream object
         '''
 
-        return FileVideoStream(self.fileName, start, length).start()
+        return FileVideoStream(self.fileName, start, length*2, length*2).start()
 
     def resize(self, image, width):
         '''Function that resize an image and keeps image ratio.
@@ -227,7 +327,7 @@ class VideoPlayer(QDialog):
 
         return cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
 
-    def update_image(self):
+    def update_video(self):
 
         if not self.fvs.stopped:
             frame = self.fvs.read()
@@ -237,9 +337,12 @@ class VideoPlayer(QDialog):
 
             pt1 = (50, height - 50)
             pt2 = (50 + int(self.parent.dLength), height - 50)
-            cv2.line(frame, pt1, pt2, (254, 97, 0), 2)
+            cv2.line(frame, pt1, pt2, (0, 0, 0), 2)
 
-            if self.fvs.currentNumber >= 40 and self.fvs.currentNumber <= 60:
+            minFrameRectShow = self.videoLength - 10
+            maxFrameRectShow = self.videoLength + 10
+
+            if self.fvs.currentNumber >= minFrameRectShow and self.fvs.currentNumber <= maxFrameRectShow:
                 x1 = self.parent.bbox[0][1] - 20
                 x2 = self.parent.bbox[1][1] + 20
                 y1 = self.parent.bbox[0][0] + 110  # due to cropping in anaylsis
