@@ -27,6 +27,7 @@ class StartWindow(QMainWindow):
         self.prevFrameNumber = self.currentFrameNumber
         self.prevBbox = self.bbox
         self.prevDlength = self.dLength
+        self.prevComment = ""
 
         # output is framenumber, bbox, class
         self.outFile = "labels.csv"
@@ -91,6 +92,7 @@ class StartWindow(QMainWindow):
     def getPreviousObject(self):
         '''Get previous frame, display it and remove last label from file'''
 
+        self.backAction.setEnabled(False)
         self.removeLastLine(self.outFile)
 
         if self.prevFilename != self.filename:
@@ -103,11 +105,16 @@ class StartWindow(QMainWindow):
         self.currentFrameNumber = self.prevFrameNumber
         self.bbox = self.prevBbox
         self.dLength = self.prevDlength
+        self.comment = self.prevComment
+
         uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
         uniqueID += " " + str(self.bbox)
         self.label.setText(uniqueID)
 
+        self.dialogs[-1].update(self.filename, self.currentFrameNumber)
+
         self.update_image()
+        self.textEdit.insertPlainText(self.prevComment)
 
     def removeLastLine(self, filename):
         '''Remove last line from a given file.'''
@@ -185,15 +192,17 @@ class StartWindow(QMainWindow):
         with open(filename, "a", encoding="utf-8") as myfile:
             if not text.endswith("\n"):
                 myfile.write("\n")
-            myfile.write(content + "\n")
+            myfile.write(content.rstrip() + "\n")
 
     def saveLabelgetNextImage(self, item):
         '''If dolphin button clicked records object as a dolphin'''
 
         # write out label
-        comment = self.textEdit.toPlainText()
+        self.backAction.setEnabled(True)
+
+        self.comment = self.textEdit.toPlainText()
         self.textEdit.clear()
-        self.writeToFile(self.outFile, f"{self.filename}, {self.currentFrameNumber}, {self.bbox[0][0]}, {self.bbox[0][1]}, {self.bbox[1][0]}, {self.bbox[1][1]}, {item}, {comment}")
+        self.writeToFile(self.outFile, f"{self.filename}, {self.currentFrameNumber}, {self.bbox[0][0]}, {self.bbox[0][1]}, {self.bbox[1][0]}, {self.bbox[1][1]}, {item}, {self.comment}")
 
         self.get_next_image_data()
 
@@ -210,6 +219,7 @@ class StartWindow(QMainWindow):
         self.prevFrameNumber = self.currentFrameNumber
         self.prevBbox = self.bbox
         self.prevDlength = self.dLength
+        self.prevComment = self.comment
 
         try:
             newFile, self.currentFrameNumber, self.bbox, self.dLength = next(self.inputGenerator)
