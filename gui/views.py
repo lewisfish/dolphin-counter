@@ -175,7 +175,7 @@ class StartWindow(QMainWindow):
         None
 
         '''
-        
+
         try:
             with open(filename, "r", encoding="utf-8") as myfile:
                 text = myfile.read()
@@ -205,6 +205,11 @@ class StartWindow(QMainWindow):
     def get_next_image_data(self):
         '''Gets next frame number and bounding box to show.
            Checks if source has changed'''
+
+        self.prevFilename = self.filename
+        self.prevFrameNumber = self.currentFrameNumber
+        self.prevBbox = self.bbox
+        self.prevDlength = self.dLength
 
         try:
             newFile, self.currentFrameNumber, self.bbox, self.dLength = next(self.inputGenerator)

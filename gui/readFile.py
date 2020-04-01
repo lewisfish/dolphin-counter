@@ -1,4 +1,5 @@
 from pathlib import Path
+import random
 import sys
 
 
@@ -18,17 +19,18 @@ def _iter_dict(videodict):
     Generator
 
     '''
-
-    for key in videodict:
-        try:
-            frames = videodict[key]["time"]
-        except KeyError:
-            print("No more objects to be analysed!!!")
-            sys.exit()
-        bboxs = videodict[key]["bbox"]
-        lengths = videodict[key]["length"]
-        for i, j, k in zip(frames, bboxs, lengths):
-            yield key, i, j, k
+    for item in videodict:
+        yield item[0], item[1], item[2], item[3]
+    # for key in videodict:
+    #     try:
+    #         frames = videodict[key]["time"]
+    #     except KeyError:
+    #         print("No more objects to be analysed!!!")
+    #         sys.exit()
+    #     bboxs = videodict[key]["bbox"]
+    #     lengths = videodict[key]["length"]
+    #     for i, j, k in zip(frames, bboxs, lengths):
+    #         yield key, i, j, k
 
 
 def createDict(filename: str):
@@ -70,7 +72,7 @@ def createDict(filename: str):
 
     f = open(filename, "r", encoding="utf-8")
     lines = f.readlines()
-    mydict = {}
+    mydict = []
 
     if lastFrameNum is None and lastCoords is None:
         boolFlag = True
@@ -82,8 +84,8 @@ def createDict(filename: str):
         # store framenumber, bbox, dolphin length in a dict
         lineSplit = line.split(",")
         videoFile = lineSplit[0]
-        if videoFile not in mydict:
-            mydict[videoFile] = {}
+        # if videoFile not in mydict:
+        #     mydict[videoFile] = {}
         if len(lineSplit) == 1:
             continue
         frameNum = int(lineSplit[1].lstrip())
@@ -95,17 +97,21 @@ def createDict(filename: str):
         coords = [[x0, y0], [x1, y1]]
         dolphinLength = float(lineSplit[-1])
         if boolFlag:
-            if "time" not in mydict[videoFile]:
-                mydict[videoFile]["time"] = []
-                mydict[videoFile]["bbox"] = []
-                mydict[videoFile]["length"] = []
-
-            mydict[videoFile]["time"].append(frameNum)
-            mydict[videoFile]["bbox"].append(coords)
-            mydict[videoFile]["length"].append(dolphinLength)
+            # if "time" not in mydict[videoFile]:
+            #     mydict[videoFile]["time"] = []
+            #     mydict[videoFile]["bbox"] = []
+            #     mydict[videoFile]["length"] = []
+            item = [videoFile, frameNum, coords, dolphinLength]
+            mydict.append(item)
+            # mydict[videoFile]["time"].append(frameNum)
+            # mydict[videoFile]["bbox"].append(coords)
+            # mydict[videoFile]["length"].append(dolphinLength)
 
         if coords == lastCoords and frameNum == lastFrameNum and str(lastVideo) == videoFile:
             boolFlag = True
+
+    # shuffle list with a set seed
+    random.Random(4).shuffle(mydict)
 
     return _iter_dict(mydict)
 
