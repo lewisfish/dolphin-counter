@@ -192,7 +192,7 @@ class StartWindow(QMainWindow):
         with open(filename, "a", encoding="utf-8") as myfile:
             if not text.endswith("\n"):
                 myfile.write("\n")
-            myfile.write(content.rstrip() + "\n")
+            myfile.write(content.replace("\n", "") + "\n")
 
     def saveLabelgetNextImage(self, item):
         '''If dolphin button clicked records object as a dolphin'''
