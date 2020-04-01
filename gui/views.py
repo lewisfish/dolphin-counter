@@ -110,26 +110,14 @@ class StartWindow(QMainWindow):
         self.update_image()
 
     def removeLastLine(self, filename):
-        '''Remove last line from a given file. This should be a multiplatform
-           memory friendly solution: https://superuser.com/a/127821'''
+        '''Remove last line from a given file.'''
 
-        count = 0
-        number = 1 # lines to delete
-        with open(filename, "r+b", buffering=0) as file:
-            file.seek(0, os.SEEK_END)
-            end = file.tell()
+        lines = None
+        with open(filename, "r") as fin:
+            lines = fin.readlines()
 
-            while file.tell() > 0:
-                file.seek(-1, os.SEEK_CUR)
-                char = file.read(1)
-                if char != b'\n' and file.tell() == end:
-                    break
-                if char == b'\n':
-                    count += 1
-                if count == number + 1:
-                    file.truncate()
-                    break
-                file.seek(-1, os.SEEK_CUR)
+        with open(filename, "w") as fout:
+            fout.writelines([item for item in lines[:-1]])
 
     def buttonSpeedState(self, button):
         '''If a speed menu action is taken, then change the
