@@ -158,7 +158,7 @@ class StartWindow(QMainWindow):
 
         elif button.text() == "200":
             self.dialogs[-1].videoLength = 100
-            self.dialogs[-1].fvs.videoLength = 100
+            # self.dialogs[-1].fvs.videoLength = 100
             self.dialogs[-1].update(self.filename, self.currentFrameNumber)
 
     def getFullFileName(self, target):
@@ -192,6 +192,7 @@ class StartWindow(QMainWindow):
         with open(filename, "a", encoding="utf-8") as myfile:
             if not text.endswith("\n"):
                 myfile.write("\n")
+            # remove any newline characters so that the csv file is properly formatted.
             myfile.write(content.replace("\n", " ") + "\n")
 
     def saveLabelgetNextImage(self, item):
@@ -322,9 +323,10 @@ class VideoPlayer(QDialog):
         self.originalFrame = frame
         startFrame = max(self.originalFrame - self.videoLength, 1)
 
+
+        self.fvs.clear()
         self.fvs.stop()
         self.fvs.stream.release()
-
         self.fvs = None
         self.fvs = self.initVideo(startFrame, self.videoLength)
 
