@@ -22,6 +22,7 @@ class StartWindow(QMainWindow):
         self.inputGenerator = generatorFile
         self.filename, self.currentFrameNumber, self.bbox, self.dLength = next(self.inputGenerator)
         self.filename = self.getFullFileName(self.filename)  # self.videoDir / Path(self.filename)
+        self.tick = 40  # interval between frames (ms)
 
         self.prevFilename = self.filename
         self.prevFrameNumber = self.currentFrameNumber
@@ -131,34 +132,34 @@ class StartWindow(QMainWindow):
            timer interval in the video player'''
 
         if button.text() == "1.0x":
-            self.dialogs[-1].timer.setInterval(40)
+            self.dialogs[-1].timer.setInterval(self.tick)
         elif button.text() == "2.0x":
-            self.dialogs[-1].timer.setInterval(20)
+            self.dialogs[-1].timer.setInterval(int(self.tick / 2))
         elif button.text() == "0.5x":
-            self.dialogs[-1].timer.setInterval(80)
+            self.dialogs[-1].timer.setInterval(self.tick * 2)
 
     def buttonLengthState(self, button):
         '''If a video length menu action is taken, then change the
            video length in the video player'''
 
-        if button.text() == "50":
+        if button.text() == "2 secs":
             self.dialogs[-1].videoLength = 25
             self.dialogs[-1].fvs.videoLength = 25
             self.dialogs[-1].update(self.filename, self.currentFrameNumber)
 
-        elif button.text() == "100":
+        elif button.text() == "4 secs":
             self.dialogs[-1].videoLength = 50
             self.dialogs[-1].fvs.videoLength = 50
             self.dialogs[-1].update(self.filename, self.currentFrameNumber)
 
-        elif button.text() == "150":
+        elif button.text() == "6 secs":
             self.dialogs[-1].videoLength = 75
             self.dialogs[-1].fvs.videoLength = 75
             self.dialogs[-1].update(self.filename, self.currentFrameNumber)
 
-        elif button.text() == "200":
+        elif button.text() == "8 secs":
             self.dialogs[-1].videoLength = 100
-            # self.dialogs[-1].fvs.videoLength = 100
+            self.dialogs[-1].fvs.videoLength = 100
             self.dialogs[-1].update(self.filename, self.currentFrameNumber)
 
     def getFullFileName(self, target):
@@ -293,7 +294,8 @@ class VideoPlayer(QDialog):
         self.parent = parent
         self.fileName = filename
         self.originalFrame = currentFrame
-        self.frameNumber = 0
+        self.count = 0
+
         # frames to loop over including original frame, really half video length
         self.videoLength = int(100 / 2)
         self.setWindowTitle("Video Feed")
@@ -313,16 +315,17 @@ class VideoPlayer(QDialog):
         self.layout.addWidget(self.image_view)
         self.setLayout(self.layout)
         # video speed ~ fps
-        self.timer.start(40)  # real time
+        self.parent.tick = 1000./self.fvs.stream.get(cv2.CAP_PROP_FPS)
+
+        self.timer.start(self.parent.tick)  # real time (ms)
 
     def update(self, name, frame):
         '''Function updates file video stream with new file, init frame etc.
         '''
-
+        self.count = 0
         self.fileName = name
         self.originalFrame = frame
         startFrame = max(self.originalFrame - self.videoLength, 1)
-
 
         self.fvs.clear()
         self.fvs.stop()
@@ -334,7 +337,7 @@ class VideoPlayer(QDialog):
         ''' Get FileVideoStream object
         '''
 
-        return FileVideoStream(self.fileName, start, length*2, length*2).start()
+        return FileVideoStream(self.fileName, start, length*2, 256).start()
 
     def resize(self, image, width):
         '''Function that resize an image and keeps image ratio.
@@ -361,7 +364,7 @@ class VideoPlayer(QDialog):
             minFrameRectShow = self.videoLength - 10
             maxFrameRectShow = self.videoLength + 10
 
-            if self.fvs.currentNumber >= minFrameRectShow and self.fvs.currentNumber <= maxFrameRectShow:
+            if self.count >= minFrameRectShow and self.count <= maxFrameRectShow:
                 x1 = self.parent.bbox[0][1] - 20
                 x2 = self.parent.bbox[1][1] + 20
                 y1 = self.parent.bbox[0][0] + 110  # due to cropping in anaylsis
@@ -378,6 +381,9 @@ class VideoPlayer(QDialog):
             pixmap = QPixmap(pimg)
 
             self.image_view.setPixmap(pixmap)
+            self.count += 1
+        if self.count >= self.videoLength*2:
+            self.count = 0
 
     def closeEvent(self, event):
         '''Closes the opened outfile on closing of QtApplication'''

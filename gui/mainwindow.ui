@@ -386,7 +386,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>100</string>
+    <string>4 secs</string>
    </property>
   </action>
   <action name="MenuLength50">
@@ -394,7 +394,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>50</string>
+    <string>2 secs</string>
    </property>
   </action>
   <action name="MenuLength200">
@@ -402,7 +402,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>200</string>
+    <string>8 secs</string>
    </property>
   </action>
   <action name="MenuLength150">
@@ -413,7 +413,7 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>150</string>
+    <string>6 secs</string>
    </property>
   </action>
  </widget>
