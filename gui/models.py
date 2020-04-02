@@ -1,4 +1,4 @@
-import cv2
+from cv2 import CAP_PROP_FPS, cvtColor, COLOR_BGR2RGB, VideoCapture, CAP_PROP_POS_FRAMES
 import numpy as np
 
 
@@ -13,15 +13,15 @@ class Camera:
         if self.cam_name == "":
             self.cap = None
         else:
-            self.cap = cv2.VideoCapture(self.cam_name)
+            self.cap = VideoCapture(self.cam_name)
 
     def get_frame(self, frameNumber):
         if self.cam_name == "":
             self.last_frame = np.zeros((761, 1500, 3), np.uint8)
         else:
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, frameNumber)
+            self.cap.set(CAP_PROP_POS_FRAMES, frameNumber)
             ret, self.last_frame = self.cap.read()
-            self.last_frame = cv2.cvtColor(self.last_frame, cv2.COLOR_BGR2RGB)
+            self.last_frame = cvtColor(self.last_frame, COLOR_BGR2RGB)
         return self.last_frame
 
     def close_camera(self):

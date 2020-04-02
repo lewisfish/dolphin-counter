@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 
-import cv2
+from cv2 import rectangle, line, resize, putText, FONT_HERSHEY_SIMPLEX, LINE_AA, CAP_PROP_FPS, INTER_AREA, cvtColor, COLOR_BGR2RGB
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QImage
@@ -262,15 +262,15 @@ class StartWindow(QMainWindow):
             self.insetImage.setPixmap(insetPixmap)
 
             # check if green rect is in inset
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (254, 97, 0), 2)
+            rectangle(frame, (x1, y1), (x2, y2), (254, 97, 0), 2)
             # draw scale bar
             pt1 = (50, height - 50)
             pt2 = (50 + int(self.dLength), height - 50)
-            cv2.line(frame, pt1, pt2, (0, 0, 0), 2)
+            line(frame, pt1, pt2, (0, 0, 0), 2)
         else:
             # Show "done!!" if no images left
-            frame = cv2.putText(frame, 'Done!!', (750, 380), cv2.FONT_HERSHEY_SIMPLEX,
-                                1, (255, 255, 255), 2, cv2.LINE_AA)
+            frame = putText(frame, 'Done!!', (750, 380), FONT_HERSHEY_SIMPLEX,
+                                1, (255, 255, 255), 2, LINE_AA)
 
         # update canvas image
         bytesPerLine = 3 * width
@@ -315,7 +315,7 @@ class VideoPlayer(QDialog):
         self.layout.addWidget(self.image_view)
         self.setLayout(self.layout)
         # video speed ~ fps
-        self.parent.tick = 1000./self.fvs.stream.get(cv2.CAP_PROP_FPS)
+        self.parent.tick = 1000./self.fvs.stream.get(CAP_PROP_FPS)
 
         self.timer.start(self.parent.tick)  # real time (ms)
 
@@ -347,19 +347,19 @@ class VideoPlayer(QDialog):
         ratio = width / float(w)
         dim = (width, int(h * ratio))
 
-        return cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
+        return resize(image, dim, interpolation=INTER_AREA)
 
     def update_video(self):
 
         if not self.fvs.stopped:
             frame = self.fvs.read()
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cvtColor(frame, COLOR_BGR2RGB)
             # draw scale bar
             height, _, _1 = frame.shape
 
             pt1 = (50, height - 50)
             pt2 = (50 + int(self.parent.dLength), height - 50)
-            cv2.line(frame, pt1, pt2, (0, 0, 0), 2)
+            line(frame, pt1, pt2, (0, 0, 0), 2)
 
             minFrameRectShow = self.videoLength - 10
             maxFrameRectShow = self.videoLength + 10
@@ -370,7 +370,7 @@ class VideoPlayer(QDialog):
                 y1 = self.parent.bbox[0][0] + 110  # due to cropping in anaylsis
                 y2 = self.parent.bbox[1][0] + 150
 
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (254, 97, 0), 2)
+                rectangle(frame, (x1, y1), (x2, y2), (254, 97, 0), 2)
 
             frame = self.resize(frame, 1500)
 

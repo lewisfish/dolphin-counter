@@ -4,18 +4,17 @@ import sys
 from threading import Thread
 import time
 
-import cv2
-
+from cv2 import VideoCapture, CAP_PROP_POS_FRAMES
 
 class FileVideoStream:
     def __init__(self, path, start, length, queue_size=128):
         # initialize the file video stream along with the boolean
         # used to indicate if the thread should be stopped or not
 
-        self.stream = cv2.VideoCapture(str(path))
+        self.stream = VideoCapture(str(path))
         self.startFrame = start
         self.videoLength = length
-        self.stream.set(cv2.CAP_PROP_POS_FRAMES, self.startFrame)
+        self.stream.set(CAP_PROP_POS_FRAMES, self.startFrame)
 
         self.stopped = False
 
@@ -56,7 +55,7 @@ class FileVideoStream:
                 self.currentNumber += 1
 
                 if self.currentNumber >= self.videoLength:
-                    self.stream.set(cv2.CAP_PROP_POS_FRAMES, self.startFrame)
+                    self.stream.set(CAP_PROP_POS_FRAMES, self.startFrame)
                     self.currentNumber = 0
 
             else:
