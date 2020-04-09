@@ -101,7 +101,7 @@ def createDict(filename: str):
         if coords == lastCoords and frameNum == lastFrameNum and str(lastVideo) == videoFile:
             boolFlag = True
 
-    return _iter_dict(ListofInputData)
+    return ListofInputData
 
 
 if __name__ == '__main__':

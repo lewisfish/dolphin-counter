@@ -20,8 +20,11 @@ class StartWindow(QMainWindow):
         self.videoFiles = list(self.videoDir.glob("**/*.mp4"))
 
         self.inputGenerator = generatorFile
-        self.filename, self.currentFrameNumber, self.bbox, self.dLength = next(self.inputGenerator)
-        self.filename = self.getFullFileName(self.filename)  # self.videoDir / Path(self.filename)
+        self.list_idx = 0
+
+        self.filename, self.currentFrameNumber, self.bbox, self.dLength = self.inputGenerator[self.list_idx]
+        self.list_idx += 1
+        self.filename = self.getFullFileName(self.filename)
         self.tick = 40  # interval between frames (ms)
 
         self.prevFilename = self.filename
@@ -95,6 +98,7 @@ class StartWindow(QMainWindow):
 
         self.backAction.setEnabled(False)
         self.removeLastLine(self.outFile)
+        self.list_idx -= 1
 
         if self.prevFilename != self.filename:
             self.camera.close_camera()
@@ -224,7 +228,8 @@ class StartWindow(QMainWindow):
         self.prevComment = self.comment
 
         try:
-            newFile, self.currentFrameNumber, self.bbox, self.dLength = next(self.inputGenerator)
+            newFile, self.currentFrameNumber, self.bbox, self.dLength = self.inputGenerator[self.list_idx]
+            self.list_idx += 1
         except StopIteration:
             newFile = ""
 
@@ -270,7 +275,7 @@ class StartWindow(QMainWindow):
         else:
             # Show "done!!" if no images left
             frame = putText(frame, 'Done!!', (750, 380), FONT_HERSHEY_SIMPLEX,
-                                1, (255, 255, 255), 2, LINE_AA)
+                            1, (255, 255, 255), 2, LINE_AA)
 
         # update canvas image
         bytesPerLine = 3 * width
@@ -300,7 +305,7 @@ class VideoPlayer(QDialog):
         self.videoLength = int(100 / 2)
         self.setWindowTitle("Video Feed")
         self.timer = QTimer(self)
-        startFrame = self.originalFrame - self.videoLength
+        startFrame = max(self.originalFrame - self.videoLength, 1)
 
         self.fvs = self.initVideo(startFrame, self.videoLength)
 
@@ -353,6 +358,7 @@ class VideoPlayer(QDialog):
 
         if not self.fvs.stopped:
             frame = self.fvs.read()
+            self.count += 1
             frame = cvtColor(frame, COLOR_BGR2RGB)
             # draw scale bar
             height, _, _1 = frame.shape
@@ -381,7 +387,7 @@ class VideoPlayer(QDialog):
             pixmap = QPixmap(pimg)
 
             self.image_view.setPixmap(pixmap)
-            self.count += 1
+
         if self.count >= self.videoLength*2:
             self.count = 0
 

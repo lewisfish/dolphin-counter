@@ -6,6 +6,7 @@ import time
 
 from cv2 import VideoCapture, CAP_PROP_POS_FRAMES
 
+
 class FileVideoStream:
     def __init__(self, path, start, length, queue_size=128):
         # initialize the file video stream along with the boolean
