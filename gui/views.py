@@ -22,7 +22,7 @@ class StartWindow(QMainWindow):
         self.inputGenerator = generatorFile
         self.list_idx = 0
 
-        self.filename, self.currentFrameNumber, self.bbox, self.dLength = self.inputGenerator[self.list_idx]
+        self.filename, self.currentFrameNumber, self.bbox, self.dLength, self.readInComment = self.inputGenerator[self.list_idx]
         self.list_idx += 1
         self.filename = self.getFullFileName(self.filename)
         self.tick = 40  # interval between frames (ms)
@@ -32,6 +32,7 @@ class StartWindow(QMainWindow):
         self.prevBbox = self.bbox
         self.prevDlength = self.dLength
         self.prevComment = ""
+        self.prevReadInComment = ""
 
         # output is framenumber, bbox, class
         self.outFile = "labels.csv"
@@ -67,6 +68,8 @@ class StartWindow(QMainWindow):
         self.waterAction.clicked.connect(lambda ch, i=10: self.saveLabelgetNextImage(i))
 
         self.textEdit.setPlaceholderText("Comments")
+        if self.readInComment is not None:
+            self.textEdit.setPlaceholderText(self.readInComment)
 
         # Menu actions
         self.speedGroup = QActionGroup(self)
@@ -111,6 +114,7 @@ class StartWindow(QMainWindow):
         self.bbox = self.prevBbox
         self.dLength = self.prevDlength
         self.comment = self.prevComment
+        self.readInComment = self.prevReadInComment
 
         uniqueID = str(self.filename.name) + " " + str(self.currentFrameNumber)
         uniqueID += " " + str(self.bbox)
@@ -119,7 +123,10 @@ class StartWindow(QMainWindow):
         self.dialogs[-1].update(self.filename, self.currentFrameNumber)
 
         self.update_image()
-        self.textEdit.insertPlainText(self.prevComment)
+        if self.readInComment is None:
+            self.textEdit.insertPlainText(self.prevComment)
+        else:
+            self.textEdit.setPlaceholderText(self.readInComment)
 
     def removeLastLine(self, filename):
         '''Remove last line from a given file.'''
@@ -226,9 +233,14 @@ class StartWindow(QMainWindow):
         self.prevBbox = self.bbox
         self.prevDlength = self.dLength
         self.prevComment = self.comment
+        self.prevReadInComment = self.readInComment
 
         try:
-            newFile, self.currentFrameNumber, self.bbox, self.dLength = self.inputGenerator[self.list_idx]
+            newFile, self.currentFrameNumber, self.bbox, self.dLength, self.readInComment = self.inputGenerator[self.list_idx]
+            self.textEdit.setPlaceholderText("Comments")
+            if self.readInComment is not None:
+                self.textEdit.setPlaceholderText(self.readInComment)
+
             self.list_idx += 1
         except StopIteration:
             newFile = ""

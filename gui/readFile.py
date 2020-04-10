@@ -93,9 +93,13 @@ def createDict(filename: str):
         x1 = int(lineSplit[4].lstrip())
         y1 = int(lineSplit[5].lstrip().rstrip()[:-1])
         coords = [[x0, y0], [x1, y1]]
-        dolphinLength = float(lineSplit[-1])
+        dolphinLength = float(lineSplit[6])
+        try:
+            comment = lineSplit[7]
+        except IndexError:
+            comment = None
         if boolFlag:
-            item = [videoFile, frameNum, coords, dolphinLength]
+            item = [videoFile, frameNum, coords, dolphinLength, comment]
             ListofInputData.append(item)
 
         if coords == lastCoords and frameNum == lastFrameNum and str(lastVideo) == videoFile:
