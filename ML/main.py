@@ -94,6 +94,7 @@ if __name__ == '__main__':
                         epochs to train for (default: 10)", metavar="N")
     parser.add_argument("-c", "--continue_train", action="store_true",
                         default=False, help="For continuing training.")
+    parser.add_argument("-i", "--evaluate", action="store_true", help="Infere on a bunch of images.")
 
     args = parser.parse_args()
 
