@@ -60,10 +60,10 @@ class OIDdataset(object):
                     className = line[0]
                     label = self.classes.index(className)
                     label = torch.as_tensor([label], dtype=torch.int64)
-                    left = float(line[1]) / xmax
-                    top = float(line[2]) / ymax
-                    right = float(line[3]) / xmax
-                    bottom = float(line[4]) / ymax
+                    left = float(line[1])
+                    top = float(line[2])
+                    right = float(line[3])
+                    bottom = float(line[4])
                     bbox = [left, top, right, bottom]
                     area = np.abs(right - left) * np.abs(bottom - top)
                     areas.append(area)
