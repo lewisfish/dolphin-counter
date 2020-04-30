@@ -58,7 +58,7 @@ class OIDdataset(object):
                 for line in lines:
                     line = line.split()
                     className = line[0]
-                    label = self.classes.index(className)
+                    label = self.classes.index(className)+1
                     label = torch.as_tensor([label], dtype=torch.int64)
                     left = float(line[1])
                     top = float(line[2])
@@ -76,7 +76,7 @@ class OIDdataset(object):
             else:
                 lines = lines[0].split()
                 className = lines[0]
-                label = self.classes.index(className)
+                label = self.classes.index(className)+1
                 label = torch.as_tensor([label], dtype=torch.int64)
                 left = float(lines[1])
                 top = float(lines[2])
