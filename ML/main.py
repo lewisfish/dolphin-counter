@@ -103,6 +103,7 @@ def main(args):
             outputs = model(image)
 
             # todo make batchable
+            # todo turn into dict instaed of list
             imageID = targets[0]["image_id"].detach().cpu().tolist()
             gt_bboxs = targets[0]["boxes"].detach().cpu().tolist()
             gt_labels = targets[0]["labels"].detach().cpu().tolist()
@@ -113,48 +114,93 @@ def main(args):
             p_scores = outputs[0]["scores"].detach().cpu().tolist()
             preds[imageID] = [p_bboxs, p_labels, p_scores]
 
-        #          TP,FP,FN
-        acc = {1: [0, 0, 0], 2: [0, 0, 0], 3: [0, 0, 0], 3: [0, 0, 0], 4: [0, 0, 0]}
-        IoUThresh = 0.5
-        scoreThresh = 0.99
-        metrics = {1: [], 2: [], 3: [], 4: []}
-        for i in range(100):
+        aps = 0
+        for IoUThresh in np.linspace(0.5, 0.95, 10):
+            scoreThresh = 0.5
+            dets = []
+            idx = 0
+            gtLabelsCounts = [0, 0, 0, 0, 0]
             for imageID in gts:
                 if imageID in preds:
                     gt_bboxs = gts[imageID][0]
                     gt_labels = gts[imageID][1]
                     for bboxGT, labelGT in zip(gt_bboxs, gt_labels):
-
+                        gtLabelsCounts[labelGT] += 1
+                        det = False
                         p_bbox = preds[imageID][0]
                         p_labels = preds[imageID][1]
                         p_scores = preds[imageID][2]
                         for bbox, label, score in zip(p_bbox, p_labels, p_scores):
+                            tmp = [0, 0, 0, 0, 0, 0]
+                            tmp[0] = imageID
+                            tmp[1] = idx
+                            tmp[2] = label
+                            tmp[3] = score
                             if score > scoreThresh:
                                 iou = _calcIoU(bbox, bboxGT)
+                                tmp[4] = iou
                                 if iou > IoUThresh:
-                                    if label == labelGT:
+                                    if label == labelGT and not det:
                                         # TP
-                                        acc[labelGT][0] += 1
+                                        det = True
+                                        tmp[5] = True
                                     else:
                                         # FP
-                                        acc[labelGT][1] += 1
+                                        tmp[5] = False
                                 else:
                                     # FP
-                                    acc[labelGT][1] += 1
+                                    tmp[5] = False
                             else:
                                 # FN
-                                acc[labelGT][2] += 1
+                                tmp[5] = False
+                            dets.append(tmp)
+                            idx += 1
                 else:
                     # FN
-                    acc[labelGT][2] += 1
+                    print("fuck!")
 
-            for key, value in acc.items():
-                P = value[0]/(value[0]+value[1])
-                R = value[0]/(value[0]+value[2])
-                metrics[key].append([P, R, scoreThresh])
-                # print(f"Class {key} P:{value[0]/(value[0]+value[1])} R:{value[0]/(value[0]+value[2])}")
-            scoreThresh -= .01
-        print(metrics)
+            accTP = [0, 0, 0, 0, 0]
+            accFP = [0, 0, 0, 0, 0]
+
+            dets = sorted(dets, key=lambda x: x[2], reverse=True)
+
+            pr = {0: [], 1: [], 2: [], 3: [], 4: []}
+            for i, det in enumerate(dets):
+                if det[5]:
+                    accTP[det[2]] += 1
+                else:
+                    accFP[det[2]] += 1
+                pr[det[2]].append([accTP[det[2]] / (accTP[det[2]] + accFP[det[2]]), accTP[det[2]] / gtLabelsCounts[det[2]]])
+
+            AP = calcAP(pr)
+            mAP = sum(AP) / (len(AP)-1)
+            aps += mAP
+            print(f"AP:{AP}", f"mAP:{mAP}")
+            IoUThresh += 0.05
+        print(aps / 10)
+
+
+def calcAP(PRs):
+    import bisect
+
+    APs = [0, 0, 0, 0, 0]
+
+    for key, value in PRs.items():
+        if len(value) == 0:
+            continue
+        prec, recall = zip(*value)
+
+        summ = 0
+        rs = np.linspace(0, 1, 11)
+        for r in rs:
+            idx = bisect.bisect_left(recall, r)
+            try:
+                term = max(prec[idx:])
+            except ValueError:
+                term = 0.0
+            summ += term
+        APs[key] = (summ*100) / 11.
+    return APs
 
 
 def soft_nms_pytorch(dets, box_scores, sigma=0.5, thresh=0.001, cuda=0):
