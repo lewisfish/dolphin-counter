@@ -1,0 +1,40 @@
+Datasplit of human labeled dataset.
+To avoid data leakage into testset, the dataset is split along videofiles.
+This was achieved by hand, and the split ratio between dolphin and other objects was preserved as best as possible, e.g 13.4% of dolphins in each set.
+
+
+total dolphin: 2704 
+total other:   17491
+total:         20195
+
+60%
+OTHER: 10423
+DOLPH: 1693
+
+20%
+OTHER: 3474
+DOLPH: 564
+
+                  D:O
+train(~60%):      1602:11688 => 12.1% DOLPHINS
+錄製_2019_11_23_16_16_02_506.mp4 
+錄製_2019_11_29_16_14_59_189.mp4 
+錄製_2019_11_24_16_10_26_600.mp4 
+錄製_2019_11_20_10_13_54_900.mp4 
+錄製_2019_11_28_09_42_38_725.mp4 
+錄製_2019_11_28_07_43_03_380.mp4 
+
+                  D:O
+validation(~20%): 566:2885 => 16.4% DOLPHINS
+錄製_2019_11_28_12_05_07_124.mp4 
+錄製_2019_11_29_08_23_34_390.mp4 
+錄製_2019_11_28_16_11_37_783.mp4 
+錄製_2019_11_21_07_25_55_214.mp4 
+錄製_2019_11_20_11_12_52_295.mp4 
+錄製_2019_11_25_12_24_03_891.mp4 
+
+                  D:O
+test(~20%):       536:2918 => 15.5% DOLPHINS
+錄製_2019_11_28_12_59_28_589.mp4 
+錄製_2019_11_28_11_02_40_268.mp4 
+錄製_2019_11_29_13_07_47_434.mp4 

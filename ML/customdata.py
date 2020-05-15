@@ -101,12 +101,9 @@ class OIDdataset(object):
     def __len__(self):
         return len(self.labels)
 
-# 錄製_2019_11_20_10_13_54_900.mp4, 43472, 229, 885, 235, 896, 10
-# 錄製_2019_11_29_16_14_59_189.mp4, 31677, 127, 606, 141, 658, 10
-# 錄製_2019_11_20_10_13_54_900.mp4, 44691, 88, 1325, 93, 1332, 10
+# example data item
 # 錄製_2019_11_28_12_05_07_124.mp4, 30440, 749, 550, 758, 556, 10
-
-# filename, framenumber, x0, y0, x1, y1, label
+# filename, framenumber, y0, x0, y1, x1, label
 # cavet is that y1 and y2 offset by 130 due to cropping of screen recording
 # this wont be true for all data after deploy though
 # just true of the train, test, validation sets.
@@ -114,12 +111,13 @@ class OIDdataset(object):
 
 class DolphinDataset(object):
     """docstring for DolphinDataset"""
-    def __init__(self, root, transforms, file):
+    def __init__(self, root, transforms, file, allLabels=False):
         super(DolphinDataset, self).__init__()
         self.root = Path(root)
         self.transforms = transforms
         self.datafile = file
         self.videoFiles = list(self.root.glob("**/*.mp4"))
+        self.allLabels = allLabels
 
         self.labels = []
         self.frameNumbers = []
@@ -145,7 +143,7 @@ class DolphinDataset(object):
                 return file
 
     def __getitem__(self, idx):
-        print(self.videoFileNames[idx])
+
         cap = cv2.VideoCapture(str(self.videoFileNames[idx]))  # converts to RGB by default
         cap.set(cv2.CAP_PROP_POS_FRAMES, self.frameNumbers[idx])
         _, image = cap.read()
@@ -156,18 +154,31 @@ class DolphinDataset(object):
 
         target = {}
 
+        # data in format of
         # y0, x0, y1, x1
-        # boxes = [[self.bboxs[idx][1]/xmax, (self.bboxs[idx][0]+130)/ymax, self.bboxs[idx][3]/xmax, (self.bboxs[idx][2]+130)/ymax]]
-        left = self.bboxs[idx][0]
-        top = self.bboxs[idx][1] + 130
-        right = self.bboxs[idx][2]
-        bottom = self.bboxs[idx][3] + 130
+        # +130 is to compensate for cropping of frames in object
+        # candidate generation
+        top = self.bboxs[idx][0] + 130
+        left = self.bboxs[idx][1]
+        bottom = self.bboxs[idx][2] + 130
+        right = self.bboxs[idx][3]
+        # rcnn needs boxes in format of
+        # x1, y1, x2, y2
         bbox = [left, top, right, bottom]
         bbox = torch.as_tensor([bbox], dtype=torch.float32)
 
         area = np.abs(right - left) * np.abs(bottom - top)
 
-        label = self.labels[idx] + 1  # as 0 is background
+        # labels = {0: "dolphin", 1: "bird", 2: "multi Dolphin", 3: "whale", 4: "turtle", 5: "unknown", 6: "unknown not cetacean", 7: "boat", 8: "fish", 9: "trash", 10: "water"}
+        label = self.labels[idx]
+        # if allLabels is False then merge all labels so that have
+        # dolphin and not dolphin classes.
+        if not self.allLabels:
+            if label == 1 or label > 3:
+                label = 1
+            else:
+                label = 0
+        label += 1  # as 0 is background
         label = torch.as_tensor([label], dtype=torch.int64)
 
         target["boxes"] = torch.as_tensor(bbox, dtype=torch.float32)
