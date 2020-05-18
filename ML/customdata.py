@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import cv2
@@ -124,16 +125,27 @@ class DolphinDataset(object):
         self.bboxs = []
         self.videoFileNames = []
 
-        # load label file into memory
-        with open(self.datafile, "r") as f:
-            lines = f.readlines()
-            for line in lines:
-                parts = line.split(",")
-                videoName = self._getFullFileName(parts[0])
-                self.videoFileNames.append(videoName)
-                self.frameNumbers.append(int(parts[1]))
-                self.bboxs.append([int(parts[2]), int(parts[3]), int(parts[4]), int(parts[5])])
-                self.labels.append(int(parts[6]))
+        if "json" in self.datafile:
+            indict = {}
+            self.data = []
+            with open(self.datafile, "r") as fin:
+                indict = json.load(fin)
+            for k, v in indict.items():
+                for key, value in indict[k].items():
+                    videoName = self._getFullFileName(k)
+                    self.data.append([videoName, int(key), value["boxes"], value["labels"]])
+
+        # else:
+        #     # load label file into memory
+        #     with open(self.datafile, "r") as f:
+        #         lines = f.readlines()
+        #         for line in lines:
+        #             parts = line.split(",")
+        #             videoName = self._getFullFileName(parts[0])
+        #             self.videoFileNames.append(videoName)
+        #             self.frameNumbers.append(int(parts[1]))
+        #             self.bboxs.append([int(parts[2]), int(parts[3]), int(parts[4]), int(parts[5])])
+        #             self.labels.append(int(parts[6]))
 
     def _getFullFileName(self, target):
         '''Get the full filename path'''
@@ -144,8 +156,11 @@ class DolphinDataset(object):
 
     def __getitem__(self, idx):
 
-        cap = cv2.VideoCapture(str(self.videoFileNames[idx]))  # converts to RGB by default
-        cap.set(cv2.CAP_PROP_POS_FRAMES, self.frameNumbers[idx])
+        # cap = cv2.VideoCapture(str(self.videoFileNames[idx]))  # converts to RGB by default
+        # cap.set(cv2.CAP_PROP_POS_FRAMES, self.frameNumbers[idx])
+        cap = cv2.VideoCapture(str(self.data[idx][0]))  # converts to RGB by default
+        cap.set(cv2.CAP_PROP_POS_FRAMES, self.data[idx][1])
+
         _, image = cap.read()
         cap.release()
 
@@ -154,37 +169,42 @@ class DolphinDataset(object):
 
         target = {}
 
-        # data in format of
-        # y0, x0, y1, x1
-        # +130 is to compensate for cropping of frames in object
-        # candidate generation
-        top = self.bboxs[idx][0] + 130
-        left = self.bboxs[idx][1]
-        bottom = self.bboxs[idx][2] + 130
-        right = self.bboxs[idx][3]
-        # rcnn needs boxes in format of
-        # x1, y1, x2, y2
-        bbox = [left, top, right, bottom]
-        bbox = torch.as_tensor([bbox], dtype=torch.float32)
+        bboxs = []
+        labels = []
+        areas = []
+        for i in range(len(self.data[idx][3])):
+            # data in format of
+            # y0, x0, y1, x1
+            # +130 is to compensate for cropping of frames in object
+            # candidate generation
+            top = self.data[idx][2][i][0] + 130
+            left = self.data[idx][2][i][1]
+            bottom = self.data[idx][2][i][2] + 130
+            right = self.data[idx][2][i][3]
+            # rcnn needs boxes in format of
+            # x1, y1, x2, y2
+            bbox = [left, top, right, bottom]
+            area = np.abs(right - left) * np.abs(bottom - top)
+            bboxs.append(bbox)
+            areas.append(area)
 
-        area = np.abs(right - left) * np.abs(bottom - top)
+            # labels = {0: "dolphin", 1: "bird", 2: "multi Dolphin", 3: "whale", 4: "turtle", 5: "unknown", 6: "unknown not cetacean", 7: "boat", 8: "fish", 9: "trash", 10: "water"}
+            label = self.data[idx][3][i]
+            # if allLabels is False then merge all labels so that have
+            # dolphin and not dolphin classes.
+            if not self.allLabels:
+                if label == 1 or label > 3:
+                    label = 1
+                else:
+                    label = 0
+            label += 1  # as 0 is background
+            labels.append(label)
 
-        # labels = {0: "dolphin", 1: "bird", 2: "multi Dolphin", 3: "whale", 4: "turtle", 5: "unknown", 6: "unknown not cetacean", 7: "boat", 8: "fish", 9: "trash", 10: "water"}
-        label = self.labels[idx]
-        # if allLabels is False then merge all labels so that have
-        # dolphin and not dolphin classes.
-        if not self.allLabels:
-            if label == 1 or label > 3:
-                label = 1
-            else:
-                label = 0
-        label += 1  # as 0 is background
-        label = torch.as_tensor([label], dtype=torch.int64)
-
-        target["boxes"] = torch.as_tensor(bbox, dtype=torch.float32)
-        target["labels"] = torch.as_tensor(label, dtype=torch.int64)
-        target["area"] = torch.as_tensor([area], dtype=torch.float32)
-        target["iscrowd"] = torch.as_tensor(0, dtype=torch.int64)
+        target["boxes"] = torch.as_tensor(bboxs, dtype=torch.float32)
+        target["labels"] = torch.as_tensor(labels, dtype=torch.int64)
+        target["area"] = torch.as_tensor(areas, dtype=torch.float32)
+        target["iscrowd"] = torch.zeros(len(labels), dtype=torch.int64)
+        tmp = torch.Tensor(len(labels))
         target["image_id"] = torch.as_tensor(idx, dtype=torch.int64)
 
         if self.transforms:
@@ -193,4 +213,4 @@ class DolphinDataset(object):
         return image, target
 
     def __len__(self):
-        return len(self.labels)
+        return len(self.data)

@@ -47,10 +47,18 @@ def main(args):
     if torch.cuda.is_available():
         torch.cuda.set_device(gpu)
     print(device)
-    num_classes = 4
+    # classes = ["Dolphin", "Guitar", "Apple", "Orange"]
+    classes = ["dolphin", "not dolphin"]
+    num_classes = len(classes)
 
-    dataset = OIDdataset("Dataset/train", get_transform(train=True), ["Dolphin", "Guitar", "Apple", "Orange"])
-    dataset_test = OIDdataset("Dataset/validation", get_transform(train=False), ["Dolphin", "Guitar", "Apple", "Orange"])
+    # dataset = OIDdataset("Dataset/train", get_transform(train=True), classes)
+    # dataset_test = OIDdataset("Dataset/validation", get_transform(train=False), classes)
+
+    root = "/data/lm959/data/ETP trial survey/Jason's Computer"
+    labelfile = "train.json"
+
+    dataset = DolphinDataset(root, get_transform(train=True), labelfile)
+    dataset_test = DolphinDataset(root, get_transform(train=False), "valid.json")
 
     data_loader = torch.utils.data.DataLoader(dataset, batch_size=2, shuffle=True, num_workers=4,
                                               collate_fn=utils.collate_fn)
@@ -78,7 +86,8 @@ def main(args):
     num_epochs = args.epochs
 
     if not args.evaluate:
-        writer = SummaryWriter("runs/train")
+        writer = SummaryWriter("dolphin/train")
+        # writer = SummaryWriter("runs/train")
         for epoch in range(start_epoch, num_epochs):
             train_one_epoch(model, optimizer, data_loader, device, epoch, writer, print_freq=10)
             lr_scheduler.step()
