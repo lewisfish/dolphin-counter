@@ -1,6 +1,25 @@
 # split dataset into train, test, and validation sets.
+import json
 
 import pandas as pd
+
+
+def tojson(dataframe, filename):
+
+    array = dataframe.to_numpy()
+    mydict = {}
+    for row in array:
+        name, frame, x0, y0, x1, y1, label = row
+        if name not in mydict:
+            mydict[name] = {}
+        if frame not in mydict[name]:
+            mydict[name][frame] = {"boxes": [], "labels": []}
+        mydict[name][frame]["boxes"].append([x0, y0, x1, y1])
+        mydict[name][frame]["labels"].append(label)
+
+    with open(f"{filename}.json", "w") as fout:
+        json.dump(mydict, fout)
+
 
 file = "updated_labels.csv"
 
@@ -26,29 +45,25 @@ df.filename.replace(r"E\:\\.{40,}\\", "", regex=True, inplace=True)
 # train
 trainSet = df[df["filename"].isin(trainVideos)]
 lengthTrain = len(trainSet.index)
-print(len(trainSet.loc[trainSet["label"] > 0].index))
-print(len(trainSet.loc[trainSet["label"] == 0].index))
-
 assert lengthTrain == 13290
 
 # validation
 validSet = df[df["filename"].isin(validationVideos)]
-print(len(validSet.loc[validSet["label"] > 0].index))
-print(len(validSet.loc[validSet["label"] == 0].index))
-
 lengthValid = len(validSet.index)
 assert lengthValid == 3451
 
 # test
 testSet = df[df["filename"].isin(testVideos)]
-print(len(testSet.loc[testSet["label"] > 0].index))
-print(len(testSet.loc[testSet["label"] == 0].index))
-
 lengthTest = len(testSet.index)
 assert lengthTest == 3454
+
 assert (lengthTest + lengthValid + lengthTrain) == 20195
 
 # write out without header or index column
-trainSet.to_csv("train.csv", index=False, header=False)
-validSet.to_csv("valid.csv", index=False, header=False)
-testSet.to_csv("test.csv", index=False, header=False)
+tojson(testSet, "test")
+tojson(validSet, "valid")
+tojson(trainSet, "train")
+
+# trainSet.to_csv("train.csv", index=False, header=False)
+# validSet.to_csv("valid.csv", index=False, header=False)
+# testSet.to_csv("test.csv", index=False, header=False)
