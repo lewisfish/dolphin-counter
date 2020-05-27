@@ -3,10 +3,13 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+from PIL import Image
 import torch
 from torchvision import transforms
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
-__all__ = ["OIDdataset", "DolphinDataset"]
+__all__ = ["OIDdataset", "DolphinDataset", "DolphinDatasetClass"]
 
 
 class OIDdataset(object):
@@ -111,7 +114,7 @@ class OIDdataset(object):
 
 
 class DolphinDataset(object):
-    """docstring for DolphinDataset"""
+    """docstring for DolphinDataset for purpiose of object detection"""
     def __init__(self, root, transforms, file, allLabels=False):
         super(DolphinDataset, self).__init__()
         self.root = Path(root)
@@ -193,7 +196,7 @@ class DolphinDataset(object):
             # if allLabels is False then merge all labels so that have
             # dolphin and not dolphin classes.
             if not self.allLabels:
-                if label == 1 or label > 3:
+                if label == 1 or label >= 3:
                     label = 1
                 else:
                     label = 0
@@ -214,3 +217,78 @@ class DolphinDataset(object):
 
     def __len__(self):
         return len(self.data)
+
+
+class DolphinDatasetClass(object):
+    """docstring for DolphinDatasetClass for image classification"""
+    def __init__(self, root, transforms, file, allLabels=False):
+        super(DolphinDatasetClass, self).__init__()
+        self.root = Path(root)
+        self.transforms = transforms
+        self.datafile = file
+        self.videoFiles = list(self.root.glob("**/*.mp4"))
+        self.allLabels = allLabels
+
+        self.labels = []
+        self.frameNumbers = []
+        self.bboxs = []
+        self.videoFileNames = []
+
+        # load label file into memory
+        with open(self.datafile, "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                parts = line.split(",")
+                videoName = self._getFullFileName(parts[0])
+                self.videoFileNames.append(videoName)
+                self.frameNumbers.append(int(parts[1]))
+                self.bboxs.append([int(parts[2]), int(parts[3]), int(parts[4]), int(parts[5])])
+                self.labels.append(int(parts[6]))
+
+    def _getFullFileName(self, target):
+        '''Get the full filename path'''
+
+        for file in self.videoFiles:
+            if target in str(file):
+                return file
+
+    def __getitem__(self, idx):
+
+        cap = cv2.VideoCapture(str(self.videoFileNames[idx]))  # converts to RGB by default
+        cap.set(cv2.CAP_PROP_POS_FRAMES, self.frameNumbers[idx])
+
+        _, image = cap.read()
+        cap.release()
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # data in format of
+        # y0, x0, y1, x1
+        # +130 is to compensate for cropping of frames in object
+        # candidate generation
+        top = self.bboxs[idx][0] + 130
+        left = self.bboxs[idx][1]
+        bottom = self.bboxs[idx][2] + 130
+        right = self.bboxs[idx][3]
+
+        image = image[top:bottom, left:right, :]
+
+        # labels = {0: "dolphin", 1: "bird", 2: "multi Dolphin", 3: "whale", 4: "turtle", 5: "unknown", 6: "unknown not cetacean", 7: "boat", 8: "fish", 9: "trash", 10: "water"}
+        label = self.labels[idx]
+        # if allLabels is False then merge all labels so that have
+        # dolphin and not dolphin classes.
+        if not self.allLabels:
+            if label == 1 or label > 3:
+                label = 1
+            else:
+                label = 0
+
+        target = torch.as_tensor(label, dtype=torch.int64)
+        if self.transforms:
+            PIL_image = Image.fromarray(image)
+            image = self.transforms(PIL_image)
+
+        return image, target
+
+    def __len__(self):
+        return len(self.labels)
