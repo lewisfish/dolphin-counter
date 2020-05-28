@@ -58,35 +58,44 @@ def class_evaluate(model, test_loader, criterion, device, epoch, writer=None):
     precision, recall, f1, accuracy, baccuracy = [], [], [], [],  []
     trues = []
     preds = []
+    batches = len(test_loader)
 
     model.eval()
     with torch.no_grad():
         # start = time.time()
-        for i, (X, y) in enumerate(test_loader):
-            X = X.to(device)
-            y = y.to(device)
+        progressEval = tqdm(enumerate(test_loader), desc="Eval:", total=batches)
+
+        for i, data in progressEval:
+            X = data[0].to(device)
+            y = data[1].to(device)
+
             outputs = model.forward(X)
             val_losses += criterion(outputs, y)
             predicted_classes = torch.max(outputs, 1)[1]  # get class from network's prediction
             trues.extend(y.cpu().detach().numpy())
             preds.extend(predicted_classes.cpu().detach().numpy())
-            for acc, metric in zip((precision, recall, f1, accuracy, baccuracy),
-                                   (precision_score, recall_score, f1_score, accuracy_score, balanced_accuracy_score)):
-                acc.append(
-                    calculate_metric(metric, y.cpu(), predicted_classes.cpu())
-                )
+            # for acc, metric in zip((precision, recall, f1, accuracy, baccuracy),
+            #                        (precision_score, recall_score, f1_score, accuracy_score, balanced_accuracy_score)):
+            #     acc.append(
+            #         calculate_metric(metric, y.cpu(), predicted_classes.cpu())
+            #     )
         # print(metrics.classification_report(trues, preds))
         # cm = metrics.confusion_matrix(trues, preds)
         # plot_confusion_matrix(cm, ["Dolphin", "Not dolphin"])
         # print_scores(precision, recall, f1, accuracy, baccuracy, 64)
         results = metrics.precision_recall_fscore_support(trues, preds)
-        if writer:
+        acc = metrics.accuracy_score(trues, preds)
+        bacc = balanced_accuracy_score(trues, preds)
 
-            writer.add_scalar("Accuracy/Dolphin", results[0][0], epoch)
+        if writer:
+            writer.add_scalar("Accuracy/accuracy", acc, epoch)
+            writer.add_scalar("Accuracy/balanced_accuracy", bacc, epoch)
+
+            writer.add_scalar("Pecision/Dolphin", results[0][0], epoch)
             writer.add_scalar("Recall/Dolphin", results[1][0], epoch)
             writer.add_scalar("F1/Dolphin", results[2][0], epoch)
 
-            writer.add_scalar("Accuracy/Not_dolphin", results[0][1], epoch)
+            writer.add_scalar("Pecision/Not_dolphin", results[0][1], epoch)
             writer.add_scalar("Recall/Not_dolphin", results[1][1], epoch)
             writer.add_scalar("F1/Not_dolphin", results[2][1], epoch)
 

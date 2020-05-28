@@ -13,7 +13,7 @@ import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torch.utils.tensorboard import SummaryWriter
 
-from customdata import OIDdataset
+from customdata import OIDdataset, DolphinDataset
 from engine import train_one_epoch, evaluate
 import transforms as T
 import utils
