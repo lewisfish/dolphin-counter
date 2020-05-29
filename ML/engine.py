@@ -14,7 +14,8 @@ from coco_eval import CocoEvaluator
 import utils
 
 
-def train_classify(model, criterion, optimizer, train_loader, test_loader, device, epochs, writer, print_freq):
+def train_classify(trial, model, criterion, optimizer, train_loader, test_loader, device, epochs, writer):
+
     model.train()
     losses = []
     batches = len(train_loader)
@@ -39,20 +40,27 @@ def train_classify(model, criterion, optimizer, train_loader, test_loader, devic
             progress.set_description(f"Loss: {total_loss/(i+1):.4f}")
             writer.add_scalar("Loss", total_loss/(i+1), epoch * len(train_loader) + i)
 
-        val_losses = class_evaluate(model, test_loader, criterion, device, epoch, writer)
+        val_losses, bacc = class_evaluate(model, test_loader, criterion, device, epoch, writer)
 
         print(f"Epoch {epoch+1}/{epochs}, training loss: {total_loss/batches}, validation loss: {val_losses/val_batches}")
 
         losses.append(total_loss/batches)  # for plotting learning curve
         writer.add_scalar("Loss/train", total_loss/batches, epoch)
         writer.add_scalar("Loss/Test", val_losses/val_batches, epoch)
-        torch.save({'epoch': epoch,
-                    'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict()
-                    }, "checkpoint_state_DC.pth")
+        writer.flush()
+        # torch.save({'epoch': epoch,
+        #             'model_state_dict': model.state_dict(),
+        #             'optimizer_state_dict': optimizer.state_dict()
+        #             }, "checkpoint_state_DC4.pth")
+        trial.report(bacc, epoch)
+
+        # Handle pruning based on the intermediate value.
+        if trial.should_prune():
+            raise optuna.exceptions.TrialPruned()
+    return bacc
 
 
-def class_evaluate(model, test_loader, criterion, device, epoch, writer=None):
+def class_evaluate(model, test_loader, criterion, device, epoch, writer=None, infer=False):
 
     val_losses = 0
     precision, recall, f1, accuracy, baccuracy = [], [], [], [],  []
@@ -79,10 +87,11 @@ def class_evaluate(model, test_loader, criterion, device, epoch, writer=None):
             #     acc.append(
             #         calculate_metric(metric, y.cpu(), predicted_classes.cpu())
             #     )
-        # print(metrics.classification_report(trues, preds))
-        # cm = metrics.confusion_matrix(trues, preds)
-        # plot_confusion_matrix(cm, ["Dolphin", "Not dolphin"])
-        # print_scores(precision, recall, f1, accuracy, baccuracy, 64)
+        if infer:
+            print(metrics.classification_report(trues, preds))
+            cm = metrics.confusion_matrix(trues, preds)
+            plot_confusion_matrix(cm, "cm-2", ["Dolphin", "Not dolphin"])
+            print_scores(precision, recall, f1, accuracy, baccuracy, 64)
         results = metrics.precision_recall_fscore_support(trues, preds)
         acc = metrics.accuracy_score(trues, preds)
         bacc = balanced_accuracy_score(trues, preds)
@@ -98,10 +107,10 @@ def class_evaluate(model, test_loader, criterion, device, epoch, writer=None):
             writer.add_scalar("Pecision/Not_dolphin", results[0][1], epoch)
             writer.add_scalar("Recall/Not_dolphin", results[1][1], epoch)
             writer.add_scalar("F1/Not_dolphin", results[2][1], epoch)
-
+            writer.flush()
     # finish = time.time()
     # print(finish-start, (finish-start)/i)
-    return val_losses
+    return val_losses, bacc
 
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, writer, print_freq):
@@ -231,6 +240,7 @@ def print_scores(p, r, f1, a, ba, batch_size):
 
 def plot_confusion_matrix(cm,
                           labels,
+                          name,
                           title='Confusion matrix',
                           cmap=None,
                           norm=False):
@@ -332,4 +342,4 @@ def plot_confusion_matrix(cm,
     cb = colorbar.ColorbarBase(cbax, cmap=cmap, orientation='vertical')
     cb.set_label('Accuracy per label')
 
-    plt.savefig("cm.png")
+    plt.savefig(f"{name}.png")

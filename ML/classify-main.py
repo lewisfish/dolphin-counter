@@ -7,6 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch import nn
 from torch import optim
 import numpy as np
+import optuna
 
 from customdata import DolphinDatasetClass
 from engine import train_classify, class_evaluate
@@ -42,6 +43,81 @@ def imageTransfroms(train):
     transforms.append(T.Normalize([.485, .456, .406],
                                   [.229, .224, .225]))
     return T.Compose(transforms)
+
+
+def get_dataset():
+
+    root = "/data/lm959/imgs/"
+    labelfile = "train.csv"
+
+    batch_size = 64
+
+    dataset = DolphinDatasetClass(root, imageTransfroms(train=True), labelfile)
+    dataset_test = DolphinDatasetClass(root, imageTransfroms(train=False), "valid.csv")
+    class_weights = np.loadtxt("class_weights.csv", delimiter=",")
+
+    sampler = torch.utils.data.sampler.WeightedRandomSampler(class_weights, len(dataset), replacement=True)
+
+    train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4,
+                                               drop_last=True, sampler=sampler)
+
+    test_loader = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=False, num_workers=4,
+                                              drop_last=True)
+
+    return train_loader, test_loader
+
+
+def objective(trial):
+
+    gpu = 0
+    device = torch.device(gpu if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        torch.cuda.set_device(gpu)
+
+    classes = ["dolphin", "not dolphin"]
+    num_classes = len(classes)
+
+    model = get_resnet50(num_classes)
+    model.to(device)
+
+    optimizer_name = trial.suggest_categorical("optimizer", ["Adam", "SGD"])
+    lr = trial.suggest_loguniform("lr", 1e-5, 1e-1)
+    optimizer = getattr(optim, optimizer_name)(model.parameters(), lr=lr)
+    weight = trial.suggest_uniform("weight", 1., 14.)
+
+    train_loader, test_loader = get_dataset()
+
+    weights = torch.FloatTensor([weight, 1.]).to(device)
+    criterion = nn.CrossEntropyLoss(weight=weights)
+
+    experiment = f"weights[{weight:.3f},{1.}],lr={lr:.3E},{optimizer_name},WeightedRandomSamplerler"
+
+    writer = SummaryWriter(f"dolphin/optuna/{experiment}")
+    num_epochs = 10
+    train_classify(trial, model, criterion, optimizer, train_loader, test_loader, device, num_epochs, writer)
+
+
+def main2():
+
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective, n_trials=10)
+
+    pruned_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.PRUNED]
+    complete_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.COMPLETE]
+
+    print("Study statistics: ")
+    print("  Number of finished trials: ", len(study.trials))
+    print("  Number of pruned trials: ", len(pruned_trials))
+    print("  Number of complete trials: ", len(complete_trials))
+
+    print("Best trial:")
+    trial = study.best_trial
+
+    print("  Value: ", trial.value)
+
+    print("  Params: ")
+    for key, value in trial.params.items():
+        print("    {}: {}".format(key, value))
 
 
 def main(args):
@@ -88,12 +164,13 @@ def main(args):
     model.to(device)
 
     # penalize not dolphin class
-    weight = torch.FloatTensor([7.2959, 1.]).to(device)
+    weight = torch.FloatTensor([7., 1.]).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
-    optimizer = optim.Adam(model.fc.parameters(), lr=0.0003)
+    lr = 0.0003
+    optimizer = optim.Adam(model.fc.parameters(), lr=lr)
 
     if args.continue_train:
-        checkpoint = torch.load("checkpoint_state_DC.pth")
+        checkpoint = torch.load("checkpoint_state_DC4.pth")
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         start_epoch = checkpoint["epoch"]
@@ -102,15 +179,18 @@ def main(args):
 
     num_epochs = args.epochs
 
+    experiment = f"weights[{weight[0]},{weight[1]}],lr={lr},WeightedRandomSamplerler"
+
     if not args.evaluate:
-        writer = SummaryWriter("dolphin/classify/train")
-        train_classify(model, criterion, optimizer, data_loader, data_loader_test, device, num_epochs, writer, 50)
-        torch.save(model, "final-model_DC1.pth")
+        writer = SummaryWriter(f"dolphin/classify/{experiment}")
+        trial = None
+        train_classify(trial, model, criterion, optimizer, data_loader, data_loader_test, device, num_epochs, writer)
+        # torch.save(model, "final-model_DC4.pth")
     else:
-        model = torch.load("final-model_DC1.pth")
+        model = torch.load("final-model_DC4.pth")
         model.eval()
         val_losses = 0
-        class_evaluate(model, data_loader_test, criterion, val_losses, device)
+        val_losses = class_evaluate(model, data_loader_test, criterion, device, 0, writer=None)
 
 
 if __name__ == '__main__':
@@ -126,4 +206,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    main(args)
+    # main(args)
+    main2()
