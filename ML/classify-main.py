@@ -1,19 +1,15 @@
 import argparse
-import sys
-
-import matplotlib.pyplot as plt
 
 import torch
 import torchvision
+from torchvision import transforms as T
 from torch.utils.tensorboard import SummaryWriter
 from torch import nn
 from torch import optim
-import torch.nn.functional as F
 import numpy as np
 
 from customdata import DolphinDatasetClass
 from engine import train_classify, class_evaluate
-import transforms as T
 
 
 def get_resnet50(num_classes):
@@ -36,15 +32,16 @@ def get_resnet50(num_classes):
 
 def imageTransfroms(train):
     transforms = []
-    transforms.append(torchvision.transforms.Resize((224, 224)))
+    transforms.append(T.Resize((224, 224)))
     if train:
-        transforms.append(torchvision.transforms.RandomRotation(180))
-        transforms.append(torchvision.transforms.RandomHorizontalFlip(180))
+        transforms.append(T.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.15, hue=0.15))
+        transforms.append(T.RandomRotation(180))
+        transforms.append(T.RandomHorizontalFlip())
 
-    transforms.append(torchvision.transforms.ToTensor())
-    transforms.append(torchvision.transforms.Normalize([.485, .456, .406],
-                                                       [.229, .224, .225]))
-    return torchvision.transforms.Compose(transforms)
+    transforms.append(T.ToTensor())
+    transforms.append(T.Normalize([.485, .456, .406],
+                                  [.229, .224, .225]))
+    return T.Compose(transforms)
 
 
 def main(args):
@@ -60,7 +57,7 @@ def main(args):
     classes = ["dolphin", "not dolphin"]
     num_classes = len(classes)
 
-    root = "/data/lm959/data/ETP trial survey/Jason's Computer"
+    root = "/data/lm959/imgs/"
     labelfile = "train.csv"
 
     batch_size = 64

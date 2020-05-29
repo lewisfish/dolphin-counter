@@ -3,7 +3,7 @@ import sys
 import time
 import torch
 from tqdm import tqdm
-import torch.nn.functional as F
+
 import inspect
 import torchvision.models.detection.mask_rcnn
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, balanced_accuracy_score

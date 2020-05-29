@@ -223,25 +223,29 @@ class DolphinDatasetClass(object):
     """docstring for DolphinDatasetClass for image classification"""
     def __init__(self, root, transforms, file, allLabels=False):
         super(DolphinDatasetClass, self).__init__()
-        self.root = Path(root)
+        self.root = root
         self.transforms = transforms
         self.datafile = file
-        self.videoFiles = list(self.root.glob("**/*.mp4"))
+
         self.allLabels = allLabels
 
         self.labels = []
-        self.frameNumbers = []
+        self.imageNames = []
         self.bboxs = []
-        self.videoFileNames = []
 
         # load label file into memory
         with open(self.datafile, "r") as f:
             lines = f.readlines()
             for line in lines:
                 parts = line.split(",")
-                videoName = self._getFullFileName(parts[0])
-                self.videoFileNames.append(videoName)
-                self.frameNumbers.append(int(parts[1]))
+                videoName = parts[0][:-4]
+                frameNumber = int(parts[1])
+                x0 = parts[2]
+                y0 = parts[3]
+
+                imagename = self.root + videoName + "-" + str(frameNumber) + "-" + str(x0) + "-" + str(y0) + ".png"
+
+                self.imageNames.append(imagename)
                 self.bboxs.append([int(parts[2]), int(parts[3]), int(parts[4]), int(parts[5])])
                 self.labels.append(int(parts[6]))
 
@@ -254,12 +258,7 @@ class DolphinDatasetClass(object):
 
     def __getitem__(self, idx):
 
-        cap = cv2.VideoCapture(str(self.videoFileNames[idx]))  # converts to RGB by default
-        cap.set(cv2.CAP_PROP_POS_FRAMES, self.frameNumbers[idx])
-
-        _, image = cap.read()
-        cap.release()
-
+        image = cv2.imread(self.imageNames[idx])
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # data in format of
