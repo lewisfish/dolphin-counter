@@ -1,8 +1,10 @@
 # :dolphin: Dolphin-counter :dolphin:
 
-This project aims to use machine learning techniques to count the amount of dolphins in aerial drone footage.
+This project uses classical computer vision techniques to generate objects for human labeling from aerial drone footage. Target labels are dolphins.
 
 ![Example of dolphin detection](https://raw.githubusercontent.com/lewisfish/dolphin-counter/master/example.png)
+
+
 
 ## Usage
 
@@ -29,9 +31,3 @@ If you are using anaconda to manage your python enviroment then use the followin
   - matplotlib
   - python=3.7
   - tensorflow
-
-## ToDo
- - [x] Generate candidates dolphin objects using thresholding, watershedding etc
- - [ ] Refine this
- - [ ] Add Machine Learning classification
- - [ ] More
