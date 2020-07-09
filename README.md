@@ -1,6 +1,7 @@
 # :dolphin: Dolphin-counter :dolphin:
 
 This project uses classical computer vision techniques to generate objects for human labeling from aerial drone footage. Target labels are dolphins.
+This repo also contains a GUI used to label the generated objects.
 
 ![Example of dolphin detection](https://raw.githubusercontent.com/lewisfish/dolphin-counter/master/example.png)
 
