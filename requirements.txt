@@ -26,7 +26,7 @@ kiwisolver==1.1.0
 Markdown==3.1.1
 matplotlib==3.1.2
 networkx==2.4
-numpy==1.17.5
+numpy==1.22.0
 olefile==0.46
 opt-einsum==0+untagged.49.gdbede45.dirty
 pandas==0.25.3
