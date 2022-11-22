@@ -30,7 +30,7 @@ numpy==1.17.5
 olefile==0.46
 opt-einsum==0+untagged.49.gdbede45.dirty
 pandas==0.25.3
-Pillow==7.0.0
+Pillow==9.3.0
 promise==2.2.1
 protobuf==3.11.3
 psutil==5.6.7
